@@ -5,7 +5,7 @@ import { useRouter } from 'next/router';
 import React, { useContext } from 'react';
 
 export function OnGoingMeetings() {
-  const { meetings, setSelectedMeetingCtx } = useContext(AppContext);
+  const { meetings, setSelectedMeetingCtx, profile } = useContext(AppContext);
   const router = useRouter();
 
   const joinMeeting = (meet: IMeeting) => {
@@ -20,6 +20,7 @@ export function OnGoingMeetings() {
           key={meeting._id}
           meet={meeting}
           clickJoin={() => joinMeeting(meeting)}
+          userId={profile._id!}
         />
       ))}
     </div>
