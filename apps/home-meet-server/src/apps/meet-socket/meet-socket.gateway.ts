@@ -41,6 +41,7 @@ export class MeetSocketGateway {
     this.logger.log(`Client ${client.id} joined room ${room}`);
     this.handleJoinInstanceRoom(client, room);
     client.join(room);
+    console.log(this.server.sockets.adapter.rooms);
   }
 
   @SubscribeMessage('offer')
@@ -78,7 +79,16 @@ export class MeetSocketGateway {
       this.rooms.push({ roomName: room, members: [client.id] });
       return;
     }
-    this.rooms.find((r) => r.roomName === room).members.push(client.id);
+    this.rooms = this.rooms.map((r) => {
+      if (r.roomName === room) {
+        r.members.push(client.id);
+      }
+      return r;
+    });
+
+    this.logger.log(`Client ${client.id} joined room`);
+
+    console.log(this.server.sockets.adapter.rooms);
   }
 
   async handleLeaveInstanceRoom(client: Socket) {
