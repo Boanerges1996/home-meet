@@ -13,6 +13,7 @@ export class MeetController {
 
   @Post('create')
   async createMeet(@Body() body: CreateMeetDto) {
+    console.log('body', body);
     return this.meetService.createMeet(body);
   }
 
@@ -24,5 +25,10 @@ export class MeetController {
   @Get('get-by-user/:userId')
   async getMeetsByUserId(@Param('userId') userId: string) {
     return this.meetService.getMeetsByUserId(userId);
+  }
+
+  @Get('get-all')
+  async getMeets() {
+    return this.meetService.getMeets();
   }
 }

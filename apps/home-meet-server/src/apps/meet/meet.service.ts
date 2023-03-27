@@ -12,7 +12,12 @@ export class MeetService {
   ) {}
 
   async createMeet(meetData: CreateMeetDto): Promise<HomeMeetApiResponse> {
-    const createdMeet = await this.meetModel.create(meetData);
+    const meet = await this.meetModel.create(meetData);
+
+    const createdMeet = await this.meetModel
+      .findById(meet._id)
+      .populate('creator')
+      .lean();
 
     return {
       message: 'Meet created successfully',
@@ -40,6 +45,16 @@ export class MeetService {
       .find({ creator: userId })
       .populate('creator')
       .lean();
+
+    return {
+      message: 'Meets fetched successfully',
+      status: 'success',
+      data: meets,
+    };
+  }
+
+  async getMeets(): Promise<HomeMeetApiResponse> {
+    const meets = await this.meetModel.find().populate('creator').lean();
 
     return {
       message: 'Meets fetched successfully',
