@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Public } from '../common';
 import { JwtAuthUserGuard } from '../jwt';
 import { CreateMeetDto } from './dto';
 import { MeetService } from './meet.service';
@@ -27,6 +28,7 @@ export class MeetController {
   }
 
   @Get('get-all')
+  @Public()
   async getMeets() {
     return this.meetService.getMeets();
   }
