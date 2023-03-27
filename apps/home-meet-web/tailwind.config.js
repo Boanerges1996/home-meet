@@ -8,7 +8,10 @@ module.exports = {
   theme: {
     extend: {
       screens: {
-        xs: '320px',
+        xs: {
+          min: '320px',
+          max: '639px',
+        },
       },
     },
   },
