@@ -77,9 +77,6 @@ export function Signup() {
           form={form}
           layout="vertical"
           name="basic"
-          initialValues={{
-            remember: true,
-          }}
           onFinish={onFinish}
           className="w-[70%]"
         >
