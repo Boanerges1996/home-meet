@@ -1,12 +1,12 @@
 'use client';
 import { IMeeting, IUser } from '@/util';
-import { createContext, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
 
 const checkIsLoggedFromLocalStorage = () => {
   const isLogged =
     typeof window !== 'undefined' && localStorage.getItem('isLogged');
 
-  return isLogged;
+  return isLogged ? true : false;
 };
 
 console.log('checkIsLoggedFromLocalStorage', checkIsLoggedFromLocalStorage());
@@ -55,6 +55,11 @@ export const HomeMeetProvider = ({
   const setTokenCtx = (token: string) => {
     setToken(token);
   };
+
+  useEffect(() => {
+    const logged = checkIsLoggedFromLocalStorage();
+    setIsLogged(logged);
+  }, []);
 
   return (
     <AppContext.Provider
