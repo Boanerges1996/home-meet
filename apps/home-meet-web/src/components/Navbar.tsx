@@ -24,10 +24,16 @@ export function NavbarComponent(props: NavbarComponentProps) {
         </Col>
         <Col xs={0} sm={0} md={16} className="text-right pr-[5px]">
           <Space>
-            <Button onClick={p.clickLogin}>Login</Button>
-            <Button type="primary" onClick={p.clickSignup}>
-              Signup
-            </Button>
+            {!p.isLogged && (
+              <>
+                {' '}
+                <Button onClick={p.clickLogin}>Login</Button>
+                <Button type="primary" onClick={p.clickSignup}>
+                  Signup
+                </Button>
+              </>
+            )}
+            {p.isLogged && <LandingDropdown isLogged={p.isLogged} />}
           </Space>
         </Col>
         <Col xs={12} sm={12} md={0} className="text-right pr-[5px]">
@@ -36,6 +42,7 @@ export function NavbarComponent(props: NavbarComponentProps) {
             clickLogout={p.clickLogout}
             clickSignup={p.clickSignup}
             clickProfile={p.clickProfile}
+            isLogged={p.isLogged}
           />
         </Col>
       </Row>
