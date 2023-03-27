@@ -3,11 +3,13 @@ export interface IUser {
   name?: string;
   email?: string;
   pic?: string;
+  _id?: string;
 }
 
 export interface IMeeting {
   id: string;
   title: string;
-  user: IUser;
+  creator: IUser;
   attendees: IUser[];
+  _id?: string;
 }

@@ -1,9 +1,9 @@
 import { NavbarComponent } from '@/components';
 import { AppContext } from '@/providers';
-import { Button, notification, Space } from 'antd';
+import { Button, Col, notification, Row, Space } from 'antd';
 import { useRouter } from 'next/router';
 import React, { useContext } from 'react';
-import { CreateMeeting } from '../meet';
+import { CreateMeeting, OnGoingMeetings } from '../meet';
 
 export function Landing(): React.ReactElement {
   const [showCreateMeeting, setShowCreateMeeting] = React.useState(false);
@@ -35,14 +35,28 @@ export function Landing(): React.ReactElement {
           onCancel={() => setShowCreateMeeting(false)}
         />
       )}
-      <div className="flex xs:h-[40vh] sm:h-[50vh] md:h-[90vh] !important h-[90vh] items-center justify-center">
-        <Space direction="vertical">
-          <p className="text-[25px] text-center m-0">Home Meet</p>
-          <p className="text-[15px] text-center">
-            Create and join meetings seemlessly
-          </p>
-          <Button onClick={createMeeting}>Create Meeting</Button>
-        </Space>
+      <div className="xs:h-[40vh] sm:h-[50vh] md:h-[90vh] !important h-[90vh]">
+        <Row>
+          <Col xs={22} sm={22} md={16}>
+            <div className="flex xs:h-[40vh] sm:h-[50vh] md:h-[90vh] !important h-[90vh] items-center justify-center">
+              <Space direction="vertical">
+                <p className="text-[25px] text-center m-0">Home Meet</p>
+                <p className="text-[15px] text-center">
+                  Create and join meetings seemlessly
+                </p>
+                <Button onClick={createMeeting}>Create Meeting</Button>
+              </Space>
+            </div>
+          </Col>
+          <Col
+            xs={22}
+            sm={22}
+            md={8}
+            className="border-1 border-solid border-[#e7e7e7] rounded h-[90vh]"
+          >
+            <OnGoingMeetings />
+          </Col>
+        </Row>
       </div>
     </div>
   );
