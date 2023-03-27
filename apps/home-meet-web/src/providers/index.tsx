@@ -8,6 +8,7 @@ export const AppContext = createContext<{
   publicMeetings?: IMeeting[];
   token?: string;
   isLogged?: boolean;
+  selectedMeeting?: IMeeting;
   setProfileCtx?: (profile: IUser) => void;
   setMeetingsCtx?: (meetings: IMeeting[]) => void;
   setPublicMeetingsCtx?: (meetings: IMeeting[]) => void;
@@ -15,6 +16,7 @@ export const AppContext = createContext<{
   setIsLogged?: (isLogged: boolean) => void;
   setIsLoggedCtx?: (isLogged: boolean) => void;
   addNewMeetingCtx?: (meeting: IMeeting) => void;
+  setSelectedMeetingCtx?: (meeting: IMeeting) => void;
 }>({
   profile: {},
   meetings: [],
@@ -32,6 +34,7 @@ export const HomeMeetProvider = ({
   const [publicMeetings, setPublicMeetings] = useState<IMeeting[]>([]);
   const [token, setToken] = useState<string>();
   const [isLogged, setIsLogged] = useState<boolean>(false);
+  const [selectedMeeting, setSelectedMeeting] = useState<IMeeting>();
 
   const query = useQuery(
     ['get-all-meetings'],
@@ -82,6 +85,10 @@ export const HomeMeetProvider = ({
     setMeetings((prev) => [...prev, meeting]);
   };
 
+  const setSelectedMeetingCtx = (meeting: IMeeting) => {
+    setSelectedMeeting(meeting);
+  };
+
   useEffect(() => {
     const logged = localStorage.getItem('isLogged') ? true : false;
     const token = localStorage.getItem('token');
@@ -99,12 +106,14 @@ export const HomeMeetProvider = ({
         publicMeetings,
         token,
         isLogged,
+        selectedMeeting,
         setProfileCtx,
         setMeetingsCtx,
         setPublicMeetingsCtx,
         setTokenCtx,
         setIsLoggedCtx,
         addNewMeetingCtx,
+        setSelectedMeetingCtx,
       }}
     >
       {children}
