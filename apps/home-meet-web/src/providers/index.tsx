@@ -1,6 +1,6 @@
-'use client';
-import { IMeeting, IUser } from '@/util';
+import { axiosClient, IMeeting, IUser } from '@/util';
 import { createContext, useEffect, useState } from 'react';
+import { useQuery } from 'react-query';
 
 export const AppContext = createContext<{
   profile: IUser;
@@ -32,6 +32,28 @@ export const HomeMeetProvider = ({
   const [publicMeetings, setPublicMeetings] = useState<IMeeting[]>([]);
   const [token, setToken] = useState<string>();
   const [isLogged, setIsLogged] = useState<boolean>(false);
+
+  const query = useQuery(
+    ['get-all-meetings'],
+    async () => {
+      return axiosClient.get('/meet/get-all');
+    },
+    {
+      onSuccess: (res) => {
+        const result = {
+          status: res.status + '-' + res.statusText,
+          headers: res.headers,
+          data: res.data,
+        };
+
+        setMeetings(result.data?.data ?? []);
+      },
+      onError(err: any) {
+        const errorMsg = err?.response?.data?.message ?? 'Something went wrong';
+      },
+      staleTime: 0,
+    }
+  );
 
   const setProfileCtx = (profile: IUser) => {
     localStorage.setItem('profile', JSON.stringify(profile));
