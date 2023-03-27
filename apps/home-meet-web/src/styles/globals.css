@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  svg {
+    display: inline;
+    vertical-align: baseline;
+  }
+}
+
+body {
+  padding: 0;
+  margin: 0;
+}
+
+.ant-menu-item-selected {
+  background-color: #b039cc !important;
+}
+
+.ant-layout-sider-children {
+  height: 100%;
+  overflow: auto;
+}
