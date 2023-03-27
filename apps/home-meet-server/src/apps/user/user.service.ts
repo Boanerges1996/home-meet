@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
@@ -33,11 +33,11 @@ export class UserService {
     const emailExists = await this.findUserByEmail(email);
     if (phone) {
       const phoneExists = await this.findUserByPhone(phone);
-      if (phoneExists) throw new Error('Phone already exists');
+      if (phoneExists) throw new HttpException('Phone already exists', 400);
     }
 
     if (emailExists) {
-      throw new Error('Email or phone already exists');
+      throw new HttpException('Email or phone already exists', 400);
     }
   }
 
@@ -46,11 +46,16 @@ export class UserService {
     await this.checkUserExists(email, phone);
 
     const createdUser = await this.userModel.create(signupData);
+    const { accessToken, refreshToken } = await this.getTokens(
+      createdUser.toObject(),
+    );
 
     return {
       message: 'User created successfully',
       status: 'success',
       data: createdUser,
+      accessToken,
+      refreshToken,
     };
   }
 
@@ -59,13 +64,13 @@ export class UserService {
     const user = await this.findUserByEmail(email);
 
     if (!user) {
-      throw new Error('User does not exist');
+      throw new HttpException('User not found', 404);
     }
 
     const isPasswordValid = await user.validatePassword(password);
 
     if (!isPasswordValid) {
-      throw new Error('Invalid password');
+      throw new HttpException('Invalid credentials', 401);
     }
 
     const { accessToken, refreshToken } = await this.getTokens(user.toObject());

@@ -1,15 +1,68 @@
-import { Button, Col, Form, Input, Row, Typography } from 'antd';
-import React from 'react';
+import { AppContext } from '@/providers';
+import { axiosClient } from '@/util';
+import { Button, Col, Form, Input, notification, Row, Typography } from 'antd';
+import { useRouter } from 'next/router';
+import React, { useContext } from 'react';
+import { useQuery } from 'react-query';
 
 export function Signup() {
+  const { setProfileCtx, setTokenCtx, setIsLoggedCtx, isLogged } =
+    useContext(AppContext);
   const [form] = Form.useForm();
+  const [name, setName] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const router = useRouter();
+
+  if (isLogged) {
+    router.push('/');
+  }
+
+  const {
+    data,
+    isLoading,
+    refetch: signupUser,
+  } = useQuery(
+    ['signup'],
+    async () => {
+      return axiosClient.post('/auth/signup', {
+        name,
+        email,
+        password,
+      });
+    },
+    {
+      enabled: false,
+      onSuccess: (res) => {
+        const result = {
+          status: res.status + '-' + res.statusText,
+          headers: res.headers,
+          data: res.data,
+        };
+        notification.success({
+          message: 'Signup successfully',
+        });
+
+        setProfileCtx!(result?.data?.data);
+        setTokenCtx!(result?.data?.accessToken);
+        setIsLoggedCtx!(true);
+        router.push('/');
+      },
+      onError(err: any) {
+        const errorMsg = err?.response?.data?.message ?? 'Something went wrong';
+        notification.error({
+          message: errorMsg,
+        });
+      },
+    }
+  );
 
   const onFinish = (values: {
     name: string;
     email: string;
     password: string;
   }) => {
-    console.log(values);
+    signupUser();
   };
   return (
     <Row
@@ -48,7 +101,10 @@ export function Signup() {
               </Typography.Text>
             }
           >
-            <Input placeholder="john doe" />
+            <Input
+              placeholder="john doe"
+              onChange={(e) => setName(e.target.value)}
+            />
           </Form.Item>
           <Form.Item
             name="email"
@@ -68,7 +124,10 @@ export function Signup() {
               </Typography.Text>
             }
           >
-            <Input placeholder="example@123.com" />
+            <Input
+              placeholder="example@123.com"
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </Form.Item>
           <Form.Item
             name="password"
@@ -84,10 +143,18 @@ export function Signup() {
               </Typography.Text>
             }
           >
-            <Input.Password placeholder="**********" />
+            <Input.Password
+              placeholder="**********"
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" className="w-full" htmlType="submit">
+            <Button
+              type="primary"
+              className="w-full"
+              htmlType="submit"
+              loading={isLoading}
+            >
               Signup
             </Button>
           </Form.Item>

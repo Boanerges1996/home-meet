@@ -6,7 +6,7 @@ const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL;
 const clientUrl = process.env.NEXT_PUBLIC_CLIENT_URL;
 
 export const axiosClient: AxiosInstance = axios.create({
-  baseURL: serverUrl,
+  baseURL: serverUrl + '/api',
   headers: {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',

@@ -13,6 +13,7 @@ export const AppContext = createContext<{
   setPublicMeetingsCtx?: (meetings: IMeeting[]) => void;
   setTokenCtx?: (token: string) => void;
   setIsLogged?: (isLogged: boolean) => void;
+  setIsLoggedCtx?: (isLogged: boolean) => void;
 }>({
   profile: {},
   meetings: [],
@@ -32,6 +33,7 @@ export const HomeMeetProvider = ({
   const [isLogged, setIsLogged] = useState<boolean>(false);
 
   const setProfileCtx = (profile: IUser) => {
+    localStorage.setItem('profile', JSON.stringify(profile));
     setProfile(profile);
   };
 
@@ -44,14 +46,22 @@ export const HomeMeetProvider = ({
   };
 
   const setTokenCtx = (token: string) => {
+    localStorage.setItem('token', token);
     setToken(token);
+  };
+
+  const setIsLoggedCtx = (logged: boolean) => {
+    localStorage.setItem('isLogged', logged ? 'true' : 'false');
+    setIsLogged(logged);
   };
 
   useEffect(() => {
     const logged = localStorage.getItem('isLogged') ? true : false;
     const token = localStorage.getItem('token');
+    const profile = localStorage.getItem('profile');
     setIsLogged(logged);
     setToken(token ?? '');
+    setProfile(JSON.parse(profile ?? '{}'));
   }, []);
 
   return (
@@ -66,6 +76,7 @@ export const HomeMeetProvider = ({
         setMeetingsCtx,
         setPublicMeetingsCtx,
         setTokenCtx,
+        setIsLoggedCtx,
       }}
     >
       {children}
