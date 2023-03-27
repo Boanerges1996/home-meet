@@ -1,6 +1,6 @@
 import { NavbarComponent } from '@/components';
 import { AppContext } from '@/providers';
-import { Button, Space } from 'antd';
+import { Button, notification, Space } from 'antd';
 import React, { useContext } from 'react';
 
 export function Landing(): React.ReactElement {
@@ -14,7 +14,19 @@ export function Landing(): React.ReactElement {
           <p className="text-[15px] text-center">
             Create and join meetings seemlessly
           </p>
-          <Button>Create Meeting</Button>
+          <Button
+            onClick={() => {
+              if (!isLogged) {
+                notification.warning({
+                  message: 'Please login before',
+                  duration: 2,
+                });
+                return;
+              }
+            }}
+          >
+            Create Meeting
+          </Button>
         </Space>
       </div>
     </div>
