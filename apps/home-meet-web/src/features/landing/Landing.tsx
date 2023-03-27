@@ -5,6 +5,16 @@ import React, { useContext } from 'react';
 
 export function Landing(): React.ReactElement {
   const { isLogged } = useContext(AppContext);
+
+  const createMeeting = () => {
+    if (!isLogged) {
+      notification.warning({
+        message: 'Please login before you can create a meeting',
+        duration: 2,
+      });
+      return;
+    }
+  };
   return (
     <div className="bg-white w-[100vw] h-[100vh] bg-[url('/svg/amoeba.svg')] bg-no-repeat">
       <NavbarComponent isLogged={isLogged} />
@@ -14,19 +24,7 @@ export function Landing(): React.ReactElement {
           <p className="text-[15px] text-center">
             Create and join meetings seemlessly
           </p>
-          <Button
-            onClick={() => {
-              if (!isLogged) {
-                notification.warning({
-                  message: 'Please login before',
-                  duration: 2,
-                });
-                return;
-              }
-            }}
-          >
-            Create Meeting
-          </Button>
+          <Button onClick={createMeeting}>Create Meeting</Button>
         </Space>
       </div>
     </div>
