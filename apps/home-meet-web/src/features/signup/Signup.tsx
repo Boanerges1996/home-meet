@@ -18,11 +18,7 @@ export function Signup() {
     router.push('/');
   }
 
-  const {
-    data,
-    isLoading,
-    refetch: signupUser,
-  } = useQuery(
+  const { refetch: signupUser, isFetching } = useQuery(
     ['signup'],
     async () => {
       return axiosClient.post('/auth/signup', {
@@ -153,7 +149,7 @@ export function Signup() {
               type="primary"
               className="w-full"
               htmlType="submit"
-              loading={isLoading}
+              loading={isFetching}
             >
               Signup
             </Button>

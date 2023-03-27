@@ -3,7 +3,7 @@
 import axios, { AxiosInstance } from 'axios';
 
 const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL;
-const clientUrl = process.env.NEXT_PUBLIC_CLIENT_URL;
+const clientUrl = process.env.NEXT_PUBLIC_WEB_URL;
 
 export const axiosClient: AxiosInstance = axios.create({
   baseURL: serverUrl + '/api',

@@ -1,10 +1,69 @@
-import { Button, Checkbox, Col, Form, Input, Row, Typography } from 'antd';
-import React from 'react';
+import { AppContext } from '@/providers';
+import { axiosClient } from '@/util';
+import {
+  Button,
+  Checkbox,
+  Col,
+  Form,
+  Input,
+  notification,
+  Row,
+  Typography,
+} from 'antd';
+import { useRouter } from 'next/router';
+import React, { useContext } from 'react';
+import { useQuery } from 'react-query';
 
 export function Login() {
   const [form] = Form.useForm();
+  const { setProfileCtx, setTokenCtx, setIsLoggedCtx, isLogged } =
+    useContext(AppContext);
 
-  const onFinish = (values: { email: string; password: string }) => {};
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const router = useRouter();
+
+  if (isLogged) {
+    router.push('/');
+  }
+
+  const { refetch: loginUser, isFetching } = useQuery(
+    ['login'],
+    async () => {
+      return axiosClient.post('/auth/login', {
+        email,
+        password,
+      });
+    },
+    {
+      enabled: false,
+      onSuccess: (res) => {
+        const result = {
+          status: res.status + '-' + res.statusText,
+          headers: res.headers,
+          data: res.data,
+        };
+        notification.success({
+          message: 'Login successfully',
+        });
+
+        setProfileCtx!(result?.data?.data);
+        setTokenCtx!(result?.data?.accessToken);
+        setIsLoggedCtx!(true);
+        router.push('/');
+      },
+      onError(err: any) {
+        const errorMsg = err?.response?.data?.message ?? 'Something went wrong';
+        notification.error({
+          message: errorMsg,
+        });
+      },
+    }
+  );
+
+  const onFinish = (values: { email: string; password: string }) => {
+    loginUser();
+  };
   return (
     <Row
       className="bg-[#b039cc] h-screen flex items-center justify-center xs:py-[5px]"
@@ -46,7 +105,10 @@ export function Login() {
               </Typography.Text>
             }
           >
-            <Input placeholder="example@123.com" />
+            <Input
+              placeholder="example@123.com"
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </Form.Item>
           <Form.Item
             name="password"
@@ -62,19 +124,18 @@ export function Login() {
               </Typography.Text>
             }
           >
-            <Input.Password placeholder="**********" />
+            <Input.Password
+              placeholder="**********"
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </Form.Item>
           <Form.Item>
-            <Row>
-              <Col span={12} className="text-left">
-                <Form.Item name="remember" valuePropName="checked" noStyle>
-                  <Checkbox>Remember me</Checkbox>
-                </Form.Item>
-              </Col>
-            </Row>
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" className="w-full" htmlType="submit">
+            <Button
+              type="primary"
+              className="w-full"
+              htmlType="submit"
+              loading={isFetching}
+            >
               Login
             </Button>
           </Form.Item>

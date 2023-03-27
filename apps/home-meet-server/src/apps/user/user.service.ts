@@ -70,7 +70,7 @@ export class UserService {
     const isPasswordValid = await user.validatePassword(password);
 
     if (!isPasswordValid) {
-      throw new HttpException('Invalid credentials', 401);
+      throw new HttpException('Invalid credentials', 400);
     }
 
     const { accessToken, refreshToken } = await this.getTokens(user.toObject());
