@@ -13,6 +13,7 @@ import { UserModule } from './user/user.module';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtConfigService } from '@/jwt';
 import { MeetModule } from './meet/meet.module';
+import { MeetSocketModule } from './meet-socket/meet-socket.module';
 
 const envFilePath = getEnvPath(`${__dirname}/../envs`);
 
@@ -38,6 +39,7 @@ const envFilePath = getEnvPath(`${__dirname}/../envs`);
     UserModule,
     AuthModule,
     MeetModule,
+    MeetSocketModule,
   ],
   controllers: [AppController],
   providers: [AppService],
