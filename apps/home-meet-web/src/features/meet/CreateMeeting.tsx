@@ -1,6 +1,6 @@
 import { AppContext } from '@/providers';
 import { axiosClient, StyleProps } from '@/util';
-import { Button, Form, Input, Modal, notification, Typography } from 'antd';
+import { Form, Input, Modal, notification, Typography } from 'antd';
 import { useRouter } from 'next/router';
 import React, { ReactElement, useContext } from 'react';
 import { useQuery } from 'react-query';
@@ -20,10 +20,11 @@ export function CreateMeeting(
   const [form] = Form.useForm();
   const [title, setTitle] = React.useState('');
   const [description, setDescription] = React.useState('');
-  const { setMeetingsCtx, profile, addNewMeetingCtx } = useContext(AppContext);
+  const { setSelectedMeetingCtx, profile, addNewMeetingCtx } =
+    useContext(AppContext);
   const router = useRouter();
 
-  const { refetch, isFetching } = useQuery(
+  const { refetch } = useQuery(
     ['create-meeting'],
     async () => {
       return axiosClient.post('/meet/create', {
@@ -43,7 +44,8 @@ export function CreateMeeting(
         notification.success({
           message: 'New meeting created successfully',
         });
-
+        setSelectedMeetingCtx!(result?.data?.data);
+        addNewMeetingCtx!(result?.data?.data);
         router.push(`/meet/${result?.data?.data?._id}`);
       },
       onError(err: any) {
