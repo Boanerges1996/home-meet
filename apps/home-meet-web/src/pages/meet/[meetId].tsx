@@ -1,9 +1,6 @@
-import React from 'react';
+import { Meeting } from '@/features';
+import { ReactNode } from 'react';
 
-const Meeting = React.lazy(() =>
-  import('@/features').then((module) => ({ default: module.Meeting }))
-);
-
-export default function MeetingRoom() {
+export default function MeetingRoom(): ReactNode {
   return <Meeting />;
 }

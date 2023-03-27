@@ -1,8 +1,4 @@
-import React from 'react';
-
-const Landing = React.lazy(() =>
-  import('@/features').then((module) => ({ default: module.Landing }))
-);
+import { Landing } from '@/features';
 
 export default function Home() {
   return <Landing />;

@@ -1,9 +1,6 @@
-import React from 'react';
+import { Login } from '@/features';
+import { ReactNode } from 'react';
 
-const Login = React.lazy(() =>
-  import('@/features').then((module) => ({ default: module.Login }))
-);
-
-export default function LoginPage() {
+export default function LoginPage(): ReactNode {
   return <Login />;
 }

@@ -12,7 +12,11 @@ type RoomAndMembersType = {
   members: string[];
 };
 
-@WebSocketGateway()
+@WebSocketGateway({
+  cors: {
+    origin: '*',
+  },
+})
 export class MeetSocketGateway {
   constructor(private readonly meetSocketService: MeetSocketService) {
     this.rooms = [];

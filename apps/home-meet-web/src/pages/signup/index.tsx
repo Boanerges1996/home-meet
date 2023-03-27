@@ -1,8 +1,5 @@
-import React, { ReactNode } from 'react';
-
-const Signup = React.lazy(() =>
-  import('@/features').then((module) => ({ default: module.Signup }))
-);
+import { Signup } from '@/features';
+import { ReactNode } from 'react';
 
 export default function SignupPage(): ReactNode {
   return <Signup />;
