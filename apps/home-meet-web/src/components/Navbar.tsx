@@ -1,5 +1,6 @@
+'use client';
 import { StyleProps } from '@/util';
-import { Button, Col, Row, Space, Typography } from 'antd';
+import { Button, Col, Row, Space } from 'antd';
 import clsx from 'clsx';
 import { LandingDropdown } from './LandingDropdown';
 
@@ -33,7 +34,15 @@ export function NavbarComponent(props: NavbarComponentProps) {
                 </Button>
               </>
             )}
-            {p.isLogged && <LandingDropdown isLogged={p.isLogged} />}
+            {p.isLogged && (
+              <LandingDropdown
+                isLogged={p.isLogged}
+                clickLogin={p.clickLogin}
+                clickSignup={p.clickSignup}
+                clickLogout={p.clickLogout}
+                clickProfile={p.clickProfile}
+              />
+            )}
           </Space>
         </Col>
         <Col xs={12} sm={12} md={0} className="text-right pr-[5px]">

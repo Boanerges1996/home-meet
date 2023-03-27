@@ -1,3 +1,4 @@
+'use client';
 import { NavbarComponent } from '@/components';
 import { AppContext } from '@/providers';
 import { Button, notification, Space } from 'antd';

@@ -1,7 +1,8 @@
+import { AppContext } from '@/providers';
 import { StyleProps } from '@/util';
 import { Avatar, Button, Dropdown } from 'antd';
 import clsx from 'clsx';
-import React from 'react';
+import React, { useContext } from 'react';
 import { FiMenu } from 'react-icons/fi';
 
 export type LandingComponentProps = StyleProps & {
@@ -10,13 +11,16 @@ export type LandingComponentProps = StyleProps & {
   clickSignup?: () => void;
   clickLogout?: () => void;
   clickProfile?: () => void;
-  pic?: string;
 };
 
 const DEFAULT_PROPS = {} as const;
 
 export function LandingDropdown(props: LandingComponentProps) {
   const p = { ...DEFAULT_PROPS, ...props };
+  const {
+    profile: { pic },
+  } = useContext(AppContext);
+
   return (
     <div className={clsx(p.className, 'text-right')}>
       {!props.isLogged && (
@@ -57,7 +61,7 @@ export function LandingDropdown(props: LandingComponentProps) {
             ],
           }}
         >
-          <Avatar src={p.pic} />
+          <Avatar src={pic} />
         </Dropdown>
       )}
     </div>
