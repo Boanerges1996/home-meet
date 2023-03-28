@@ -7,7 +7,7 @@ import { CreateMeeting, OnGoingMeetings } from '../meet';
 
 export function Landing(): React.ReactElement {
   const [showCreateMeeting, setShowCreateMeeting] = React.useState(false);
-  const { isLogged } = useContext(AppContext);
+  const { isLogged, logoutCtx } = useContext(AppContext);
 
   const router = useRouter();
 
@@ -28,6 +28,7 @@ export function Landing(): React.ReactElement {
         isLogged={isLogged}
         clickLogin={() => router.push('/login')}
         clickSignup={() => router.push('/signup')}
+        clickLogout={() => logoutCtx!()}
       />
       {showCreateMeeting && (
         <CreateMeeting

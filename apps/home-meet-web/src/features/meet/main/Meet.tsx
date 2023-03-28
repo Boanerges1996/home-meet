@@ -48,10 +48,17 @@ export default function MeetMain() {
 
   const [hasSetViewerPeerConnection, setHasSetViewerPeerConnection] =
     useState<boolean>(false);
-  const { profile } = useContext(AppContext);
+  const { profile, isLogged } = useContext(AppContext);
   const viewersPeerConnections = useRef<ViewersPeerConnections>({});
   const broadcasterVideoRef = useRef<HTMLVideoElement | null>(null);
   const viewersMediaStreams = useRef<ViewersMediaStreams>({});
+  const router = useRouter();
+
+  console.log(isLogged);
+
+  if (!isLogged) {
+    router.push('/login');
+  }
 
   const { data: meetData } = useQuery(
     ['login'],
@@ -72,7 +79,7 @@ export default function MeetMain() {
       console.log('disconnected');
     });
 
-    // // Pause before redirect
+    // Pause before redirect
     // window.addEventListener(
     //   'beforeunload',
     //   function () {

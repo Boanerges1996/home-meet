@@ -17,6 +17,7 @@ export const AppContext = createContext<{
   setIsLoggedCtx?: (isLogged: boolean) => void;
   addNewMeetingCtx?: (meeting: IMeeting) => void;
   setSelectedMeetingCtx?: (meeting: IMeeting) => void;
+  logoutCtx?: () => void;
 }>({
   profile: {},
   meetings: [],
@@ -89,6 +90,15 @@ export const HomeMeetProvider = ({
     setSelectedMeeting(meeting);
   };
 
+  const logoutCtx = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('profile');
+    localStorage.removeItem('isLogged');
+    setToken('');
+    setProfile({});
+    setIsLogged(false);
+  };
+
   useEffect(() => {
     const logged = localStorage.getItem('isLogged') ? true : false;
     const token = localStorage.getItem('token');
@@ -114,6 +124,7 @@ export const HomeMeetProvider = ({
         setIsLoggedCtx,
         addNewMeetingCtx,
         setSelectedMeetingCtx,
+        logoutCtx,
       }}
     >
       {children}
