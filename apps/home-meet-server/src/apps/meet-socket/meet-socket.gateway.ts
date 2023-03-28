@@ -7,8 +7,13 @@ import {
 } from '@nestjs/websockets';
 import { MeetSocketService } from './meet-socket.service';
 import {
+  EXCHANGE_ICE_CANDIDATES,
+  INCOMING_ANSWER,
+  INCOMING_CANDIDATE,
+  INCOMING_OFFER,
   JOIN_AS_BROADCASTER,
   JOIN_AS_VIEWER,
+  NEW_ANSWER,
   NEW_OFFER,
   NEW_VIEWER_JOINED,
 } from './meet-socket.constants';
@@ -104,11 +109,11 @@ export class MeetSocketGateway {
     this.logger.log(
       `Client ${client.id} offered to room ${roomId} to viewer ${data.viewerId}`,
     );
-    this.server.to(data.viewerId).emit('incoming-offer', data);
+    this.server.to(data.viewerId).emit(INCOMING_OFFER, data);
     // console.log(this.server.sockets.adapter.rooms);
   }
 
-  @SubscribeMessage('answer')
+  @SubscribeMessage(NEW_ANSWER)
   async handleAnswer(
     client: Socket,
     {
@@ -125,18 +130,22 @@ export class MeetSocketGateway {
     const broadcasterId = this.rooms[roomId];
     if (broadcasterId) {
       this.logger.log(`Client ${client.id} answered to room ${roomId}`);
-      this.server.to(broadcasterId).emit('incoming-answer', data);
+      this.server.to(broadcasterId).emit(INCOMING_ANSWER, data);
     }
   }
 
-  @SubscribeMessage('exchange-ice-candidates')
+  @SubscribeMessage(EXCHANGE_ICE_CANDIDATES)
   async handleIceCandidate(
     client: Socket,
-    { roomId, candidate }: { roomId: string; candidate: any },
+    {
+      roomId,
+      candidate,
+      userId,
+    }: { roomId: string; candidate: any; userId: string },
   ): Promise<any> {
     this.logger.log(`Client ${client.id} ice-candidate ${roomId}`);
     console.log('ice-candidate', candidate);
-    this.server.to(roomId).emit('incoming-candidate', candidate);
+    this.server.to(userId).emit(INCOMING_CANDIDATE, candidate);
   }
 
   // async handleJoinInstanceRoom(client: Socket, room: string) {
