@@ -388,6 +388,8 @@ export default function MeetMain() {
         <video
           ref={broadcasterVideoRef as LegacyRef<HTMLVideoElement>}
           className="w-[150px] h-[150px]"
+          muted
+          autoPlay
         />
       )}
     </div>
