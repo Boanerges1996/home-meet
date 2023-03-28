@@ -1,0 +1,9 @@
+export const JOIN_AS_BROADCASTER = 'join-as-broadcaster';
+export const JOIN_AS_VIEWER = 'join-as-viewer';
+export const NEW_VIEWER_JOINED = 'new-viewer-joined';
+export const NEW_OFFER = 'new-offer';
+export const NEW_ANSWER = 'new-answer';
+export const EXCHANGE_ICE_CANDIDATES = 'exchange-ice-candidates';
+export const INCOMING_OFFER = 'incoming-offer';
+export const INCOMING_ANSWER = 'incoming-answer';
+export const INCOMING_CANDIDATE = 'incoming-candidate';
