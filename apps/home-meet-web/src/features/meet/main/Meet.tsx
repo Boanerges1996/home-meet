@@ -37,18 +37,21 @@ export default function MeetMain() {
   const { meetId } = useRouter().query;
   const [meet, setMeet] = useState<IMeeting>();
   const [isHost, setIsHost] = useState<boolean | null>(null);
-  const { profile } = useContext(AppContext);
-  const viewersPeerConnections = useRef<ViewersPeerConnections>({});
-  const broadcasterVideoRef = useRef<HTMLVideoElement | null>(null);
-  const [hasStartedStreaming, setHasStartedStreaming] =
-    useState<boolean>(false);
-  const viewersMediaStreams = useRef<ViewersMediaStreams>({});
   const [
     viewerPeerConnectionToBroadcaster,
     setViewerPeerConnectionToBroadcaster,
   ] = useState<RTCPeerConnection>();
   const [broadcasterMediaStream, setBroadcasterMediaStream] =
     useState<MediaStream>();
+  const [hasStartedStreaming, setHasStartedStreaming] =
+    useState<boolean>(false);
+
+  const [hasSetViewerPeerConnection, setHasSetViewerPeerConnection] =
+    useState<boolean>(false);
+  const { profile } = useContext(AppContext);
+  const viewersPeerConnections = useRef<ViewersPeerConnections>({});
+  const broadcasterVideoRef = useRef<HTMLVideoElement | null>(null);
+  const viewersMediaStreams = useRef<ViewersMediaStreams>({});
 
   const { data: meetData } = useQuery(
     ['login'],
@@ -68,6 +71,15 @@ export default function MeetMain() {
     socket.on('disconnect', () => {
       console.log('disconnected');
     });
+
+    // // Pause before redirect
+    // window.addEventListener(
+    //   'beforeunload',
+    //   function () {
+    //     debugger;
+    //   },
+    //   false
+    // );
   }, []);
 
   useEffect(() => {
@@ -169,7 +181,7 @@ export default function MeetMain() {
             );
           }
         );
-      } else if (!isHost && meetId && meet) {
+      } else if (!isHost && meetId && meet && !hasSetViewerPeerConnection) {
         socket.emit(JOIN_AS_VIEWER, {
           broadcasterId: meet.creator._id,
           roomId: meetId,
@@ -200,8 +212,6 @@ export default function MeetMain() {
             setBroadcasterMediaStream(event.streams[0]);
           }
         };
-
-        setViewerPeerConnectionToBroadcaster(viewerPeerConnection);
 
         socket.on(
           INCOMING_OFFER,
@@ -235,9 +245,19 @@ export default function MeetMain() {
               );
           }
         );
+
+        setViewerPeerConnectionToBroadcaster(viewerPeerConnection);
+        setHasSetViewerPeerConnection(true);
       }
     })();
-  }, [isHost, meet, meetId, profile._id, viewerPeerConnectionToBroadcaster]);
+  }, [
+    hasSetViewerPeerConnection,
+    isHost,
+    meet,
+    meetId,
+    profile._id,
+    viewerPeerConnectionToBroadcaster,
+  ]);
 
   useEffect(() => {
     if (meetData && meetId) {

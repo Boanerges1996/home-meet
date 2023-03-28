@@ -14,7 +14,7 @@ export function OnGoingMeetings() {
   };
   return (
     <div>
-      <p className="text-[25px] text-center m-0">Meetings</p>
+      <p className="text-[25px] text-center m-0">Ongoing Broadcast</p>
       {meetings?.map((meeting) => (
         <MeetingListCard
           key={meeting._id}
