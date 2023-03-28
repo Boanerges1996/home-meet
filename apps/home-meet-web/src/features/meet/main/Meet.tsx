@@ -35,7 +35,8 @@ let socket: Socket;
 
 export default function MeetMain() {
   const { meetId } = useRouter().query;
-  const [meet, setMeet] = useState<IMeeting>();
+  const [toggle, setToggle] = useState<boolean>(false);
+  const [meet, setMeet] = useState<IMeeting | null>(null);
   const [isHost, setIsHost] = useState<boolean | null>(null);
   const [
     viewerPeerConnectionToBroadcaster,
@@ -53,12 +54,12 @@ export default function MeetMain() {
   const broadcasterVideoRef = useRef<HTMLVideoElement | null>(null);
   const viewersMediaStreams = useRef<ViewersMediaStreams>({});
   const router = useRouter();
+  const remoteStreamRef = React.useRef<HTMLVideoElement>();
+  const [remoteStream, setRemoteStream] = useState<MediaStream>();
 
-  console.log(isLogged);
-
-  if (!isLogged) {
-    router.push('/login');
-  }
+  // if (!isLogged) {
+  //   router.push('/login');
+  // }
 
   const { data: meetData } = useQuery(
     ['login'],
@@ -87,6 +88,12 @@ export default function MeetMain() {
     //   },
     //   false
     // );
+
+    return () => {
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -99,6 +106,7 @@ export default function MeetMain() {
   useEffect(() => {
     (async () => {
       if (isHost && meetId && meet) {
+        console.log('I am the host');
         let stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: false,
@@ -107,10 +115,16 @@ export default function MeetMain() {
         setBroadcasterMediaStream(stream);
         setHasStartedStreaming(true);
 
-        socket.emit(JOIN_AS_BROADCASTER, {
-          broadcasterId: meet.creator._id,
-          roomId: meetId,
-        });
+        socket.emit(
+          JOIN_AS_BROADCASTER,
+          {
+            broadcasterId: meet.creator._id,
+            roomId: meetId,
+          },
+          async (data: any) => {
+            console.log('data', data);
+          }
+        );
         socket.on(
           NEW_VIEWER_JOINED,
           async (data: {
@@ -119,6 +133,7 @@ export default function MeetMain() {
             viewerId: string;
             socketId: string;
           }) => {
+            console.log('New viewer joined', data);
             viewersPeerConnections.current[data.viewerId] =
               new RTCPeerConnection({
                 iceServers: [
@@ -132,6 +147,7 @@ export default function MeetMain() {
               event
             ) => {
               if (event.candidate) {
+                console.log('candidate ', event.candidate);
                 // Send ice candidates to viewer
                 socket.emit(EXCHANGE_ICE_CANDIDATES, {
                   candidate: event.candidate,
@@ -140,6 +156,15 @@ export default function MeetMain() {
                   roomId: meetId,
                 });
               }
+            };
+
+            viewersPeerConnections.current[
+              data.viewerId
+            ].onconnectionstatechange = (event) => {
+              console.log(
+                'connection state',
+                viewersPeerConnections.current[data.viewerId].connectionState
+              );
             };
 
             // Add tracks to stream
@@ -154,6 +179,8 @@ export default function MeetMain() {
             const offer = await viewersPeerConnections.current[
               data.viewerId
             ].createOffer();
+
+            console.log('Offer', offer);
 
             // Set local description
             await viewersPeerConnections.current[
@@ -183,54 +210,126 @@ export default function MeetMain() {
         socket.on(
           INCOMING_CANDIDATE,
           async ({ candidate, userId }: { candidate: any; userId: string }) => {
-            await viewersPeerConnections.current[userId].addIceCandidate(
+            await viewersPeerConnections.current[userId]?.addIceCandidate(
               candidate
             );
           }
         );
-      } else if (!isHost && meetId && meet && !hasSetViewerPeerConnection) {
-        socket.emit(JOIN_AS_VIEWER, {
-          broadcasterId: meet.creator._id,
-          roomId: meetId,
-        });
-        const viewerPeerConnection = new RTCPeerConnection({
-          iceServers: [
-            {
-              urls: 'stun:stun.l.google.com:19302',
-            },
-          ],
-        });
-
-        viewerPeerConnection.onicecandidate = (event) => {
-          if (event.candidate) {
-            // Send ice candidates to broadcaster
-            socket.emit(EXCHANGE_ICE_CANDIDATES, {
-              candidate: event.candidate,
-              userId: meet.creator._id,
+      } else if (
+        isHost !== null &&
+        !isHost &&
+        meetId &&
+        meet &&
+        !hasSetViewerPeerConnection
+      ) {
+        console.log('I am a viewer');
+        socket.emit(
+          JOIN_AS_VIEWER,
+          {
+            roomId: meetId,
+            viewerData: {
               viewerId: profile._id,
-              roomId: meetId,
-            });
-          }
-        };
+              name: profile.name,
+              pic: profile.pic,
+            },
+          },
+          async (data: { success: boolean }) => {
+            if (data.success) {
+              const viewerPeerConnection = new RTCPeerConnection({
+                iceServers: [
+                  {
+                    urls: 'stun:stun.l.google.com:19302',
+                  },
+                ],
+              });
 
-        viewerPeerConnection.ontrack = (event) => {
-          if (event.streams && event.streams[0]) {
-            // set broadcaster stream
-            setBroadcasterMediaStream(event.streams[0]);
-          }
-        };
+              viewerPeerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                  // Send ice candidates to broadcaster
+                  socket.emit(EXCHANGE_ICE_CANDIDATES, {
+                    candidate: event.candidate,
+                    userId: meet.creator._id,
+                    viewerId: profile._id,
+                    roomId: meetId,
+                  });
+                }
+              };
 
-        socket.on(
-          INCOMING_OFFER,
-          async (data: { offer: any; viewerId: string }) => {
+              viewerPeerConnection.ontrack = (event) => {
+                console.log('on track', event.streams);
+                if (event.streams && event.streams[0]) {
+                  // set broadcaster stream
+                  setBroadcasterMediaStream(event.streams[0]);
+                  setHasStartedStreaming(true);
+                }
+              };
+
+              viewerPeerConnection.onconnectionstatechange = (event) => {
+                console.log(
+                  'connection state',
+                  viewerPeerConnection.connectionState
+                );
+              };
+
+              setViewerPeerConnectionToBroadcaster(viewerPeerConnection);
+
+              setHasSetViewerPeerConnection(true);
+            }
+          }
+        );
+      }
+    })();
+  }, [
+    hasSetViewerPeerConnection,
+    isHost,
+    meet,
+    meetId,
+    profile._id,
+    profile.name,
+    profile.pic,
+    viewerPeerConnectionToBroadcaster,
+  ]);
+
+  useEffect(() => {
+    if (meetData && meetId) {
+      setMeet(meetData?.data?.data);
+    }
+
+    return () => {
+      setMeet(null);
+    };
+  }, [meetData, meetId]);
+
+  useEffect(() => {
+    if (viewerPeerConnectionToBroadcaster) {
+      socket.on(
+        INCOMING_OFFER,
+        async (data: { offer: any; viewerId: string }) => {
+          try {
+            console.log('Incoming offer', data);
+            console.log(
+              'Viewer peer connection',
+              viewerPeerConnectionToBroadcaster
+            );
+
             if (viewerPeerConnectionToBroadcaster) {
               await viewerPeerConnectionToBroadcaster.setRemoteDescription(
                 data.offer
               );
 
-              const answer = await viewerPeerConnection.createAnswer();
+              console.log(
+                'Viewer peer connection',
+                viewerPeerConnectionToBroadcaster
+              );
 
-              await viewerPeerConnection.setLocalDescription(answer);
+              const answer =
+                await viewerPeerConnectionToBroadcaster.createAnswer();
+
+              await viewerPeerConnectionToBroadcaster.setLocalDescription(
+                answer
+              );
+
+              console.log('Answer', answer);
 
               socket.emit(NEW_ANSWER, {
                 roomId: meetId,
@@ -240,37 +339,28 @@ export default function MeetMain() {
                 },
               });
             }
+          } catch (error) {
+            console.log('Error', error);
           }
-        );
+        }
+      );
 
-        socket.on(
-          INCOMING_CANDIDATE,
-          async ({ candidate, userId }: { candidate: any; userId: string }) => {
-            if (viewerPeerConnectionToBroadcaster)
-              await viewerPeerConnectionToBroadcaster?.addIceCandidate(
-                candidate
-              );
-          }
-        );
-
-        setViewerPeerConnectionToBroadcaster(viewerPeerConnection);
-        setHasSetViewerPeerConnection(true);
-      }
-    })();
-  }, [
-    hasSetViewerPeerConnection,
-    isHost,
-    meet,
-    meetId,
-    profile._id,
-    viewerPeerConnectionToBroadcaster,
-  ]);
-
-  useEffect(() => {
-    if (meetData && meetId) {
-      setMeet(meetData?.data?.data);
+      socket.on(
+        INCOMING_CANDIDATE,
+        async ({
+          candidate,
+          userId,
+        }: {
+          candidate: RTCIceCandidate;
+          userId: string;
+        }) => {
+          console.log(candidate);
+          if (viewerPeerConnectionToBroadcaster)
+            viewerPeerConnectionToBroadcaster.addIceCandidate(candidate);
+        }
+      );
     }
-  }, [meetData, meetId]);
+  }, [meetId, profile._id, viewerPeerConnectionToBroadcaster]);
 
   useEffect(() => {
     if (
@@ -278,9 +368,17 @@ export default function MeetMain() {
       hasStartedStreaming &&
       broadcasterVideoRef.current
     ) {
+      console.log(broadcasterMediaStream);
       broadcasterVideoRef.current.srcObject = broadcasterMediaStream;
       broadcasterVideoRef.current.play();
     }
+
+    return () => {
+      if (broadcasterVideoRef.current) {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        broadcasterVideoRef.current.srcObject = null;
+      }
+    };
   }, [broadcasterMediaStream, hasStartedStreaming]);
 
   return (

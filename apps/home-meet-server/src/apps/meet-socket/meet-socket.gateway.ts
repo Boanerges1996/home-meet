@@ -45,14 +45,6 @@ export class MeetSocketGateway {
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 
-  @SubscribeMessage('join-room')
-  async handleJoinRoom(client: Socket, room: string): Promise<any> {
-    this.logger.log(`Client ${client.id} joined room ${room}`);
-
-    client.join(room);
-    console.log(this.server.sockets.adapter.rooms);
-  }
-
   @SubscribeMessage(JOIN_AS_BROADCASTER)
   async handleJoinAsBroadcaster(
     client: Socket,
@@ -64,7 +56,6 @@ export class MeetSocketGateway {
       roomId: string;
     },
   ): Promise<any> {
-    client.join(roomId);
     client.join(broadcasterId);
     this.rooms[roomId] = broadcasterId; // Refactor to make sure only broadcaster can join
   }
@@ -85,11 +76,20 @@ export class MeetSocketGateway {
       };
     },
   ): Promise<any> {
-    client.join(roomId);
+    console.log({
+      roomId,
+      viewerData,
+    });
+    client.join(viewerData.viewerId);
+    console.log(this.server.sockets.adapter.rooms);
     const broadcasterId = this.rooms[roomId];
     if (broadcasterId) {
       this.server.to(broadcasterId).emit(NEW_VIEWER_JOINED, viewerData);
     }
+
+    return {
+      success: true,
+    };
   }
 
   @SubscribeMessage(NEW_OFFER)
@@ -106,11 +106,11 @@ export class MeetSocketGateway {
       };
     },
   ): Promise<any> {
+    const viewerId = data.viewerId;
     this.logger.log(
-      `Client ${client.id} offered to room ${roomId} to viewer ${data.viewerId}`,
+      `Client ${client.id} offered to room ${roomId} to viewer ${viewerId}`,
     );
-    this.server.to(data.viewerId).emit(INCOMING_OFFER, data);
-    // console.log(this.server.sockets.adapter.rooms);
+    this.server.to(viewerId).emit(INCOMING_OFFER, data);
   }
 
   @SubscribeMessage(NEW_ANSWER)
@@ -144,39 +144,7 @@ export class MeetSocketGateway {
     }: { roomId: string; candidate: any; userId: string },
   ): Promise<any> {
     this.logger.log(`Client ${client.id} ice-candidate ${roomId}`);
-    console.log('ice-candidate', candidate);
-    this.server.to(userId).emit(INCOMING_CANDIDATE, candidate);
+    // console.log('ice-candidate', candidate);
+    this.server.to(userId).emit(INCOMING_CANDIDATE, { candidate });
   }
-
-  // async handleJoinInstanceRoom(client: Socket, room: string) {
-  //   const roomExists = !this.rooms.find((r) => r.roomName === room);
-  //   if (!roomExists) {
-  //     this.rooms.push({ roomName: room, members: [client.id] });
-  //     return;
-  //   }
-  //   this.rooms = this.rooms.map((r) => {
-  //     if (r.roomName === room) {
-  //       r.members.push(client.id);
-  //     }
-  //     return r;
-  //   });
-
-  //   this.logger.log(`Client ${client.id} joined room`);
-
-  //   console.log(this.server.sockets.adapter.rooms);
-  // }
-
-  // async handleLeaveInstanceRoom(client: Socket) {
-  //   const tempRooms: RoomAndMembersType[] = [];
-  //   this.rooms.forEach((r) => {
-  //     client.leave(r.roomName);
-  //     const members = r.members.filter((m) => m !== client.id);
-  //     if (members.length > 0) {
-  //       tempRooms.push({ roomName: r.roomName, members });
-  //     }
-  //   });
-
-  //   this.rooms = tempRooms;
-  //   this.logger.log(`Client ${client.id} left room`);
-  // }
 }
