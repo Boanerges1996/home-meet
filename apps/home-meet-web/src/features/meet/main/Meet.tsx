@@ -9,7 +9,6 @@ import {
   NEW_OFFER,
   NEW_VIEWER_JOINED,
 } from '@/common';
-import { ViewersCard } from '@/components/ViewersCard';
 import { AppContext } from '@/providers';
 import {
   axiosClient,
@@ -30,12 +29,18 @@ import React, {
 import { useQuery } from 'react-query';
 import io, { Socket } from 'socket.io-client';
 import MeetViewers from './MeetViewers';
+import { ViewersChat } from './ViewersChat';
 
 export type MeetMainComponentProps = StyleProps & {};
 
 type ViewersPeerConnections = {
   [key: string]: RTCPeerConnection;
 };
+
+type ViewersDataChannels = {
+  [key: string]: RTCDataChannel;
+};
+
 type ViewersMediaStreams = {
   [key: string]: MediaStream;
 };
@@ -52,6 +57,8 @@ export default function MeetMain() {
     viewerPeerConnectionToBroadcaster,
     setViewerPeerConnectionToBroadcaster,
   ] = useState<RTCPeerConnection>();
+  const [viewerDataChannelToBroadcaster, setViewerDataChannelToBroadcaster] =
+    useState<RTCDataChannel>();
   const [broadcasterMediaStream, setBroadcasterMediaStream] =
     useState<MediaStream>();
   const [hasStartedStreaming, setHasStartedStreaming] =
@@ -61,6 +68,7 @@ export default function MeetMain() {
     useState<boolean>(false);
   const { profile, isLogged } = useContext(AppContext);
   const viewersPeerConnections = useRef<ViewersPeerConnections>({});
+  const viewersDataChannels = useRef<ViewersDataChannels>({});
   const broadcasterVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const { data: meetData } = useQuery(
@@ -149,6 +157,35 @@ export default function MeetMain() {
                   },
                 ],
               });
+
+            viewersPeerConnections.current[data.viewerId].createDataChannel(
+              'chat',
+              {
+                ordered: false,
+                maxPacketLifeTime: 3000,
+              }
+            );
+
+            viewersPeerConnections.current[data.viewerId].ondatachannel = (
+              event
+            ) => {
+              const dataChannel = event.channel;
+              console.log('dataChannel', dataChannel);
+
+              viewersDataChannels.current[data.viewerId] = dataChannel;
+
+              dataChannel.onopen = () => {
+                console.log('data channel opened');
+              };
+
+              dataChannel.onmessage = (event) => {
+                console.log('data channel message', event.data);
+              };
+
+              dataChannel.onclose = () => {
+                console.log('data channel closed');
+              };
+            };
 
             viewersPeerConnections.current[data.viewerId].onicecandidate = (
               event
@@ -247,6 +284,25 @@ export default function MeetMain() {
                 ],
               });
 
+              // this is used by the sender to send data to the receiver
+              let sendChannel = viewerPeerConnection.createDataChannel(
+                'chat',
+                {}
+              );
+
+              sendChannel.onopen = () => {
+                console.log('data channel opened');
+                sendChannel.send('hello');
+              };
+
+              sendChannel.onmessage = (event) => {
+                console.log('data channel message', event.data);
+              };
+
+              sendChannel.onclose = () => {
+                console.log('data channel closed');
+              };
+
               viewerPeerConnection.onicecandidate = (event) => {
                 if (event.candidate) {
                   // Send ice candidates to broadcaster
@@ -276,8 +332,8 @@ export default function MeetMain() {
               };
 
               setViewerPeerConnectionToBroadcaster(viewerPeerConnection);
-
               setHasSetViewerPeerConnection(true);
+              setViewerDataChannelToBroadcaster(sendChannel);
             }
           }
         );
@@ -375,9 +431,8 @@ export default function MeetMain() {
   console.log('viewers', viewers);
   return (
     <div>
-      MeetMain
       <Row align="middle" justify="center">
-        <Col xs={22} sm={22} md={16} className="h-[79vh]">
+        <Col xs={22} sm={22} md={16} className="h-[95vh] overflow-hidden">
           {hasStartedStreaming && (
             <video
               ref={broadcasterVideoRef as LegacyRef<HTMLVideoElement>}
@@ -385,13 +440,16 @@ export default function MeetMain() {
               muted
               autoPlay
               width="100%"
-              height="100%"
+              height="60%"
             />
           )}
-        </Col>
-        <Col xs={22} sm={22} md={8}></Col>
-        <Col span={24}>
           <MeetViewers viewers={viewers} />
+        </Col>
+        <Col xs={22} sm={22} md={8}>
+          <ViewersChat
+            dataChannel={viewerDataChannelToBroadcaster}
+            user={profile}
+          />
         </Col>
       </Row>
     </div>

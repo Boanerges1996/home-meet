@@ -15,7 +15,7 @@ export default function MeetViewers(props: MeetViewersProps) {
     <div
       className={clsx(
         p.className,
-        'h-[170px] w-[100vw] overflow-x-scroll snap-x-mandatory'
+        'h-[40%] overflow-x-scroll overflow-y-scroll snap-x-mandatory'
       )}
     >
       {p.viewers.map((viewer, idx) => (
