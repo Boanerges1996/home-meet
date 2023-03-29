@@ -1,37 +1,129 @@
 import { useEffect, useState } from 'react';
 
-export function useGetMediaDevices() {
-  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
-
-  useEffect(() => {
-    navigator.mediaDevices.enumerateDevices().then((devices) => {
-      setDevices(devices);
-    });
-  }, []);
-
-  return devices;
+interface MediaDeviceInfo {
+  deviceId: string;
+  kind: string;
+  label: string;
 }
 
-export function useGetUserMedia(constraints: MediaStreamConstraints) {
+interface MediaStreamConfig {
+  video?: MediaTrackConstraints | boolean;
+  audio?: MediaTrackConstraints | boolean;
+}
+
+export const useUserMedia = ({
+  config,
+  isHost,
+}: {
+  config: MediaStreamConfig;
+  isHost: boolean | null;
+}) => {
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [selectedVideoDevice, setSelectedVideoDevice] =
+    useState<MediaDeviceInfo | null>(null);
+  const [selectedAudioDevice, setSelectedAudioDevice] =
+    useState<MediaDeviceInfo | null>(null);
+  const [hasStartedStreaming, setHasStartedStreaming] = useState(false);
+  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
 
   useEffect(() => {
-    navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
-      setStream(stream);
-    });
-  }, [constraints]);
+    const getUserMedia = async () => {
+      try {
+        const videoConfig = config.video || true;
+        const audioConfig = config.audio || true;
+        const devices = await navigator.mediaDevices.enumerateDevices();
 
-  return stream;
-}
+        const videoDevices = devices.filter(
+          (device) => device.kind === 'videoinput'
+        );
+        const audioDevices = devices.filter(
+          (device) => device.kind === 'audioinput'
+        );
 
-export function useGetDisplayMedia(constraints: MediaStreamConstraints) {
-  const [stream, setStream] = useState<MediaStream | null>(null);
+        if (videoDevices.length > 0 && !selectedVideoDevice) {
+          setSelectedVideoDevice(videoDevices[0]);
+        }
 
-  useEffect(() => {
-    navigator.mediaDevices.getDisplayMedia(constraints).then((stream) => {
-      setStream(stream);
-    });
-  }, [constraints]);
+        if (audioDevices.length > 0 && !selectedAudioDevice) {
+          setSelectedAudioDevice(audioDevices[0]);
+        }
 
-  return stream;
-}
+        const constraints: MediaStreamConstraints = {
+          video: videoConfig,
+          audio: audioConfig,
+        };
+
+        if (selectedVideoDevice) {
+          constraints.video = {
+            deviceId: { exact: selectedVideoDevice.deviceId },
+          };
+        }
+
+        if (selectedAudioDevice) {
+          constraints.audio = {
+            deviceId: { exact: selectedAudioDevice.deviceId },
+          };
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        setStream(stream);
+        setHasStartedStreaming(true);
+      } catch (error) {
+        console.error('Error accessing user media:', error);
+      }
+    };
+
+    if (isHost !== null && isHost) {
+      getUserMedia();
+    }
+  }, [config, selectedVideoDevice, selectedAudioDevice, isHost]);
+
+  const toggleVideoDevice = async (deviceId: string) => {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(
+      (device) => device.kind === 'videoinput'
+    );
+    const selectedDevice = videoDevices.find(
+      (device) => device.deviceId === deviceId
+    );
+
+    if (selectedDevice) {
+      setSelectedVideoDevice(selectedDevice);
+    }
+  };
+
+  const toggleAudioDevice = async (deviceId: string) => {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const audioDevices = devices.filter(
+      (device) => device.kind === 'audioinput'
+    );
+    const selectedDevice = audioDevices.find(
+      (device) => device.deviceId === deviceId
+    );
+
+    if (selectedDevice) {
+      setSelectedAudioDevice(selectedDevice);
+    }
+  };
+
+  const toggleMute = () => {
+    if (stream) {
+      stream.getAudioTracks().forEach((track) => {
+        track.enabled = !track.enabled;
+      });
+    }
+  };
+
+  return {
+    stream,
+    toggleMute,
+    selectedVideoDevice,
+    toggleVideoDevice,
+    selectedAudioDevice,
+    toggleAudioDevice,
+    audioDevices,
+    videoDevices,
+    hasStartedStreaming,
+  };
+};

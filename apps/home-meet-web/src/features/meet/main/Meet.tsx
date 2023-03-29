@@ -20,7 +20,7 @@ import {
   ViewersDataChannels,
   ViewersPeerConnections,
 } from '@/util';
-import { Col, notification, Row } from 'antd';
+import { Button, Col, notification, Row } from 'antd';
 import { useRouter } from 'next/router';
 import React, {
   LegacyRef,
@@ -41,6 +41,7 @@ let socket: Socket;
 
 export function MeetMain() {
   const { meetId } = useRouter().query;
+  const [isMuted, setIsMuted] = useState<boolean>(false);
   const [meet, setMeet] = useState<IMeeting | null>(null);
   const [isHost, setIsHost] = useState<boolean | null>(null);
   const [viewers, setViewers] = useState<IUser[]>([]);
@@ -87,6 +88,14 @@ export function MeetMain() {
       console.log('disconnected');
     });
 
+    window.addEventListener(
+      'beforeunload',
+      function () {
+        debugger;
+      },
+      false
+    );
+
     return () => {
       socket.off('connect');
       socket.off('disconnect');
@@ -106,7 +115,7 @@ export function MeetMain() {
       if (isHost && meetId && meet) {
         let stream = await navigator.mediaDevices.getUserMedia({
           video: true,
-          audio: false,
+          audio: true,
         });
 
         setBroadcasterMediaStream(stream);
@@ -306,9 +315,7 @@ export function MeetMain() {
               };
 
               viewerPeerConnection.ontrack = (event) => {
-                console.log('on track', event.streams);
                 if (event.streams && event.streams[0]) {
-                  // set broadcaster stream
                   setBroadcasterMediaStream(event.streams[0]);
                   setHasStartedStreaming(true);
                 }
@@ -346,6 +353,7 @@ export function MeetMain() {
     profile._id,
     profile.name,
     profile.pic,
+    router,
     viewerPeerConnectionToBroadcaster,
   ]);
 
@@ -395,12 +403,10 @@ export function MeetMain() {
         INCOMING_CANDIDATE,
         async ({
           candidate,
-          userId,
         }: {
           candidate: RTCIceCandidate;
           userId: string;
         }) => {
-          console.log(candidate);
           if (viewerPeerConnectionToBroadcaster)
             viewerPeerConnectionToBroadcaster.addIceCandidate(candidate);
         }
@@ -414,7 +420,6 @@ export function MeetMain() {
       hasStartedStreaming &&
       broadcasterVideoRef.current
     ) {
-      console.log(broadcasterMediaStream);
       broadcasterVideoRef.current.srcObject = broadcasterMediaStream;
       broadcasterVideoRef.current.play();
     }
@@ -427,7 +432,12 @@ export function MeetMain() {
     };
   }, [broadcasterMediaStream, hasStartedStreaming]);
 
-  console.log('viewers', viewers);
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+    broadcasterMediaStream?.getAudioTracks().forEach((track) => {
+      track.enabled = !track.enabled;
+    });
+  };
   return (
     <div>
       <Row align="middle" justify="center">
@@ -436,12 +446,13 @@ export function MeetMain() {
             <video
               ref={broadcasterVideoRef as LegacyRef<HTMLVideoElement>}
               className="w-[100%]"
-              muted
+              muted={isHost ? isMuted : true}
               autoPlay
               width="100%"
               height="60%"
             />
           )}
+          <Button onClick={toggleMute}>{isMuted ? 'Umute' : 'Mute'}</Button>
           <MeetViewers viewers={viewers} />
         </Col>
         <Col xs={22} sm={22} md={8}>
