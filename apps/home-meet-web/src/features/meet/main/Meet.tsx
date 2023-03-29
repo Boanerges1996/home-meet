@@ -20,7 +20,7 @@ import {
   ViewersDataChannels,
   ViewersPeerConnections,
 } from '@/util';
-import { Col, Row } from 'antd';
+import { Col, notification, Row } from 'antd';
 import { useRouter } from 'next/router';
 import React, {
   LegacyRef,
@@ -158,7 +158,6 @@ export function MeetMain() {
               event
             ) => {
               const dataChannel = event.channel;
-              console.log('dataChannel', dataChannel);
 
               viewersDataChannels.current[data.viewerId] = dataChannel;
 
@@ -316,6 +315,15 @@ export function MeetMain() {
               };
 
               viewerPeerConnection.onconnectionstatechange = (event) => {
+                if (viewerPeerConnection.connectionState === 'failed') {
+                  notification.open({
+                    message: 'Broadcaster has left the meet',
+                    description:
+                      'The connection to the broadcaster has been closed',
+                    duration: 5,
+                  });
+                  router.push('/');
+                }
                 console.log(
                   'connection state',
                   viewerPeerConnection.connectionState
