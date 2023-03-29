@@ -2,10 +2,8 @@ import {
   EXCHANGE_ICE_CANDIDATES,
   INCOMING_ANSWER,
   INCOMING_CANDIDATE,
-  INCOMING_OFFER,
   JOIN_AS_BROADCASTER,
   JOIN_AS_VIEWER,
-  NEW_ANSWER,
   NEW_OFFER,
   NEW_VIEWER_JOINED,
 } from '@/common';
@@ -21,7 +19,7 @@ import {
   ViewersDataChannels,
   ViewersPeerConnections,
 } from '@/util';
-import { Button, Col, notification, Row } from 'antd';
+import { Button, Col, notification, Row, Select, Space, Tooltip } from 'antd';
 import { useRouter } from 'next/router';
 import React, {
   LegacyRef,
@@ -30,6 +28,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { BsFillMicMuteFill, BsFillMicFill } from 'react-icons/bs';
 
 import { BroadcasterChats } from './BroadcasterChats';
 import MeetViewers from './MeetViewers';
@@ -44,6 +43,10 @@ export function MeetMain() {
   const [isHost, setIsHost] = useState<boolean | null>(null);
   const [viewers, setViewers] = useState<IUser[]>([]);
   const [chat, setChat] = useState<ChatType[]>([]);
+  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>();
+  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>();
   const [
     viewerPeerConnectionToBroadcaster,
     setViewerPeerConnectionToBroadcaster,
@@ -93,6 +96,19 @@ export function MeetMain() {
           audio: true,
         });
 
+        const devices = await navigator.mediaDevices.enumerateDevices();
+
+        const videoDevices = devices.filter(
+          (device) => device.kind === 'videoinput'
+        );
+        const audioDevices = devices.filter(
+          (device) => device.kind === 'audioinput'
+        );
+
+        setAudioDevices(audioDevices);
+        setVideoDevices(videoDevices);
+        setSelectedAudioDevice(audioDevices[0].deviceId);
+        setSelectedVideoDevice(videoDevices[0].deviceId);
         setBroadcasterMediaStream(stream);
         setHasStartedStreaming(true);
 
@@ -366,18 +382,54 @@ export function MeetMain() {
   return (
     <div>
       <Row align="middle" justify="center">
-        <Col xs={22} sm={22} md={16} className="h-[95vh] overflow-hidden">
+        <Col
+          xs={22}
+          sm={22}
+          md={16}
+          className="h-[100vh] w-full overflow-hidden"
+        >
           {hasStartedStreaming && (
             <video
               ref={broadcasterVideoRef as LegacyRef<HTMLVideoElement>}
-              className="w-[100%]"
+              className="w-[100%] object-cover m-0 p-0"
               muted={isHost ? isMuted : true}
               autoPlay
-              width="100%"
               height="60%"
-            />
+            ></video>
           )}
-          <Button onClick={toggleMute}>{isMuted ? 'Umute' : 'Mute'}</Button>
+          {isHost !== null && isHost && (
+            <div className="h-[85px] w-full bg-black opacity-75 py-2 mt-[-105px] flex items-center justify-center">
+              <Space>
+                {' '}
+                <Tooltip title={isMuted ? 'Unmute' : 'Mute'}>
+                  <Button onClick={toggleMute} shape="circle">
+                    {isMuted ? <BsFillMicMuteFill /> : <BsFillMicFill />}
+                  </Button>
+                </Tooltip>
+                <Select
+                  value={selectedAudioDevice}
+                  placeholder="Select microphone"
+                  options={[
+                    ...audioDevices.map((device) => ({
+                      label: device.label,
+                      value: device.deviceId,
+                    })),
+                  ]}
+                />
+                <Select
+                  value={selectedVideoDevice}
+                  placeholder="Select camera"
+                  options={[
+                    ...videoDevices.map((device) => ({
+                      label: device.label,
+                      value: device.deviceId,
+                    })),
+                  ]}
+                />
+              </Space>
+            </div>
+          )}
+
           <MeetViewers viewers={viewers} />
         </Col>
         <Col xs={22} sm={22} md={8}>

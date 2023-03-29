@@ -26,3 +26,9 @@ export type ChatType = {
   message: string;
   user: IUser;
 };
+
+interface MediaDeviceInfo {
+  deviceId: string;
+  kind: string;
+  label: string;
+}
