@@ -13,3 +13,16 @@ export interface IMeeting {
   attendees: IUser[];
   _id?: string;
 }
+
+export type ViewersPeerConnections = {
+  [key: string]: RTCPeerConnection;
+};
+
+export type ViewersDataChannels = {
+  [key: string]: RTCDataChannel;
+};
+
+export type ChatType = {
+  message: string;
+  user: IUser;
+};

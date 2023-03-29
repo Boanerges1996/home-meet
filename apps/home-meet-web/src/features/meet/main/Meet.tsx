@@ -12,10 +12,13 @@ import {
 import { AppContext } from '@/providers';
 import {
   axiosClient,
+  ChatType,
   IMeeting,
   IUser,
   logConnectionState,
   StyleProps,
+  ViewersDataChannels,
+  ViewersPeerConnections,
 } from '@/util';
 import { Col, Row } from 'antd';
 import { useRouter } from 'next/router';
@@ -28,31 +31,20 @@ import React, {
 } from 'react';
 import { useQuery } from 'react-query';
 import io, { Socket } from 'socket.io-client';
+import { BroadcasterChats } from './BroadcasterChats';
 import MeetViewers from './MeetViewers';
 import { ViewersChat } from './ViewersChat';
 
 export type MeetMainComponentProps = StyleProps & {};
 
-type ViewersPeerConnections = {
-  [key: string]: RTCPeerConnection;
-};
-
-type ViewersDataChannels = {
-  [key: string]: RTCDataChannel;
-};
-
-type ViewersMediaStreams = {
-  [key: string]: MediaStream;
-};
-
 let socket: Socket;
 
-export default function MeetMain() {
+export function MeetMain() {
   const { meetId } = useRouter().query;
-  const [toggle, setToggle] = useState<boolean>(false);
   const [meet, setMeet] = useState<IMeeting | null>(null);
   const [isHost, setIsHost] = useState<boolean | null>(null);
   const [viewers, setViewers] = useState<IUser[]>([]);
+  const [chat, setChat] = useState<ChatType[]>([]);
   const [
     viewerPeerConnectionToBroadcaster,
     setViewerPeerConnectionToBroadcaster,
@@ -70,9 +62,14 @@ export default function MeetMain() {
   const viewersPeerConnections = useRef<ViewersPeerConnections>({});
   const viewersDataChannels = useRef<ViewersDataChannels>({});
   const broadcasterVideoRef = useRef<HTMLVideoElement | null>(null);
+  const router = useRouter();
+
+  if ((isLogged !== null || isLogged !== undefined) && !isLogged) {
+    router.push('/login');
+  }
 
   const { data: meetData } = useQuery(
-    ['login'],
+    ['get-meets'],
     async () => {
       return axiosClient.get('/meet/get/' + meetId);
     },
@@ -89,15 +86,6 @@ export default function MeetMain() {
     socket.on('disconnect', () => {
       console.log('disconnected');
     });
-
-    // Pause before redirect
-    // window.addEventListener(
-    //   'beforeunload',
-    //   function () {
-    //     debugger;
-    //   },
-    //   false
-    // );
 
     return () => {
       socket.off('connect');
@@ -180,6 +168,10 @@ export default function MeetMain() {
 
               dataChannel.onmessage = (event) => {
                 console.log('data channel message', event.data);
+                setChat((prev) => [
+                  ...prev,
+                  JSON.parse(event.data) as ChatType,
+                ]);
               };
 
               dataChannel.onclose = () => {
@@ -292,7 +284,6 @@ export default function MeetMain() {
 
               sendChannel.onopen = () => {
                 console.log('data channel opened');
-                sendChannel.send('hello');
               };
 
               sendChannel.onmessage = (event) => {
@@ -446,10 +437,13 @@ export default function MeetMain() {
           <MeetViewers viewers={viewers} />
         </Col>
         <Col xs={22} sm={22} md={8}>
-          <ViewersChat
-            dataChannel={viewerDataChannelToBroadcaster}
-            user={profile}
-          />
+          {isHost !== null && isHost && <BroadcasterChats chats={chat} />}
+          {isHost !== null && !isHost && (
+            <ViewersChat
+              dataChannel={viewerDataChannelToBroadcaster}
+              user={profile}
+            />
+          )}
         </Col>
       </Row>
     </div>
