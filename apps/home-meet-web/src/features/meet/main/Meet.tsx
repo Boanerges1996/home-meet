@@ -9,8 +9,16 @@ import {
   NEW_OFFER,
   NEW_VIEWER_JOINED,
 } from '@/common';
+import { ViewersCard } from '@/components/ViewersCard';
 import { AppContext } from '@/providers';
-import { axiosClient, IMeeting, StyleProps } from '@/util';
+import {
+  axiosClient,
+  IMeeting,
+  IUser,
+  logConnectionState,
+  StyleProps,
+} from '@/util';
+import { Col, Row } from 'antd';
 import { useRouter } from 'next/router';
 import React, {
   LegacyRef,
@@ -21,6 +29,7 @@ import React, {
 } from 'react';
 import { useQuery } from 'react-query';
 import io, { Socket } from 'socket.io-client';
+import MeetViewers from './MeetViewers';
 
 export type MeetMainComponentProps = StyleProps & {};
 
@@ -38,6 +47,7 @@ export default function MeetMain() {
   const [toggle, setToggle] = useState<boolean>(false);
   const [meet, setMeet] = useState<IMeeting | null>(null);
   const [isHost, setIsHost] = useState<boolean | null>(null);
+  const [viewers, setViewers] = useState<IUser[]>([]);
   const [
     viewerPeerConnectionToBroadcaster,
     setViewerPeerConnectionToBroadcaster,
@@ -52,14 +62,6 @@ export default function MeetMain() {
   const { profile, isLogged } = useContext(AppContext);
   const viewersPeerConnections = useRef<ViewersPeerConnections>({});
   const broadcasterVideoRef = useRef<HTMLVideoElement | null>(null);
-  const viewersMediaStreams = useRef<ViewersMediaStreams>({});
-  const router = useRouter();
-  const remoteStreamRef = React.useRef<HTMLVideoElement>();
-  const [remoteStream, setRemoteStream] = useState<MediaStream>();
-
-  // if (!isLogged) {
-  //   router.push('/login');
-  // }
 
   const { data: meetData } = useQuery(
     ['login'],
@@ -106,7 +108,6 @@ export default function MeetMain() {
   useEffect(() => {
     (async () => {
       if (isHost && meetId && meet) {
-        console.log('I am the host');
         let stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: false,
@@ -133,7 +134,13 @@ export default function MeetMain() {
             viewerId: string;
             socketId: string;
           }) => {
-            console.log('New viewer joined', data);
+            const newViewer = {
+              name: data.name,
+              pic: data.pic,
+              _id: data.viewerId,
+            };
+
+            setViewers((prev) => [...prev, newViewer]);
             viewersPeerConnections.current[data.viewerId] =
               new RTCPeerConnection({
                 iceServers: [
@@ -147,7 +154,6 @@ export default function MeetMain() {
               event
             ) => {
               if (event.candidate) {
-                console.log('candidate ', event.candidate);
                 // Send ice candidates to viewer
                 socket.emit(EXCHANGE_ICE_CANDIDATES, {
                   candidate: event.candidate,
@@ -161,10 +167,11 @@ export default function MeetMain() {
             viewersPeerConnections.current[
               data.viewerId
             ].onconnectionstatechange = (event) => {
-              console.log(
-                'connection state',
-                viewersPeerConnections.current[data.viewerId].connectionState
-              );
+              logConnectionState({
+                state:
+                  viewersPeerConnections.current[data.viewerId].connectionState,
+                viewerName: data.name ?? '',
+              });
             };
 
             // Add tracks to stream
@@ -179,8 +186,6 @@ export default function MeetMain() {
             const offer = await viewersPeerConnections.current[
               data.viewerId
             ].createOffer();
-
-            console.log('Offer', offer);
 
             // Set local description
             await viewersPeerConnections.current[
@@ -222,7 +227,6 @@ export default function MeetMain() {
         meet &&
         !hasSetViewerPeerConnection
       ) {
-        console.log('I am a viewer');
         socket.emit(
           JOIN_AS_VIEWER,
           {
@@ -306,20 +310,9 @@ export default function MeetMain() {
         INCOMING_OFFER,
         async (data: { offer: any; viewerId: string }) => {
           try {
-            console.log('Incoming offer', data);
-            console.log(
-              'Viewer peer connection',
-              viewerPeerConnectionToBroadcaster
-            );
-
             if (viewerPeerConnectionToBroadcaster) {
               await viewerPeerConnectionToBroadcaster.setRemoteDescription(
                 data.offer
-              );
-
-              console.log(
-                'Viewer peer connection',
-                viewerPeerConnectionToBroadcaster
               );
 
               const answer =
@@ -328,8 +321,6 @@ export default function MeetMain() {
               await viewerPeerConnectionToBroadcaster.setLocalDescription(
                 answer
               );
-
-              console.log('Answer', answer);
 
               socket.emit(NEW_ANSWER, {
                 roomId: meetId,
@@ -381,17 +372,28 @@ export default function MeetMain() {
     };
   }, [broadcasterMediaStream, hasStartedStreaming]);
 
+  console.log('viewers', viewers);
   return (
     <div>
       MeetMain
-      {hasStartedStreaming && (
-        <video
-          ref={broadcasterVideoRef as LegacyRef<HTMLVideoElement>}
-          className="w-[150px] h-[150px]"
-          muted
-          autoPlay
-        />
-      )}
+      <Row align="middle" justify="center">
+        <Col xs={22} sm={22} md={16} className="h-[79vh]">
+          {hasStartedStreaming && (
+            <video
+              ref={broadcasterVideoRef as LegacyRef<HTMLVideoElement>}
+              className="w-[100%]"
+              muted
+              autoPlay
+              width="100%"
+              height="100%"
+            />
+          )}
+        </Col>
+        <Col xs={22} sm={22} md={8}></Col>
+        <Col span={24}>
+          <MeetViewers viewers={viewers} />
+        </Col>
+      </Row>
     </div>
   );
 }
