@@ -9,9 +9,10 @@ import {
   NEW_OFFER,
   NEW_VIEWER_JOINED,
 } from '@/common';
+import { useMeetData, useSocket } from '@/hooks';
+import useViewerPeerConnection from '@/hooks/meet';
 import { AppContext } from '@/providers';
 import {
-  axiosClient,
   ChatType,
   IMeeting,
   IUser,
@@ -29,15 +30,12 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useQuery } from 'react-query';
-import io, { Socket } from 'socket.io-client';
+
 import { BroadcasterChats } from './BroadcasterChats';
 import MeetViewers from './MeetViewers';
 import { ViewersChat } from './ViewersChat';
 
 export type MeetMainComponentProps = StyleProps & {};
-
-let socket: Socket;
 
 export function MeetMain() {
   const { meetId } = useRouter().query;
@@ -64,44 +62,12 @@ export function MeetMain() {
   const viewersDataChannels = useRef<ViewersDataChannels>({});
   const broadcasterVideoRef = useRef<HTMLVideoElement | null>(null);
   const router = useRouter();
+  const { meetData } = useMeetData(meetId as string | undefined);
+  const [socket] = useSocket();
 
-  if ((isLogged !== null || isLogged !== undefined) && !isLogged) {
-    router.push('/login');
-  }
-
-  const { data: meetData } = useQuery(
-    ['get-meets'],
-    async () => {
-      return axiosClient.get('/meet/get/' + meetId);
-    },
-    {
-      enabled: meetId ? true : false,
-    }
-  );
-
-  useEffect(() => {
-    socket = io('http://localhost:5001');
-    socket.on('connect', () => {
-      console.log('connected');
-    });
-    socket.on('disconnect', () => {
-      console.log('disconnected');
-    });
-
-    window.addEventListener(
-      'beforeunload',
-      function () {
-        debugger;
-      },
-      false
-    );
-
-    return () => {
-      socket.off('connect');
-      socket.off('disconnect');
-      socket.disconnect();
-    };
-  }, []);
+  // if ((isLogged !== null || isLogged !== undefined) && !isLogged) {
+  //   router.push('/login');
+  // }
 
   useEffect(() => {
     if (meet && profile._id) {
@@ -110,9 +76,18 @@ export function MeetMain() {
     }
   }, [meet, profile._id]);
 
+  const hasMetViewerRequirements =
+    isHost !== null &&
+    !isHost &&
+    meetId &&
+    meet &&
+    socket &&
+    !hasSetViewerPeerConnection;
+  const hasMetHostRequirements = isHost && meetId && meet && socket;
+
   useEffect(() => {
     (async () => {
-      if (isHost && meetId && meet) {
+      if (hasMetHostRequirements) {
         let stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: true,
@@ -121,16 +96,10 @@ export function MeetMain() {
         setBroadcasterMediaStream(stream);
         setHasStartedStreaming(true);
 
-        socket.emit(
-          JOIN_AS_BROADCASTER,
-          {
-            broadcasterId: meet.creator._id,
-            roomId: meetId,
-          },
-          async (data: any) => {
-            console.log('data', data);
-          }
-        );
+        socket.emit(JOIN_AS_BROADCASTER, {
+          broadcasterId: meet.creator._id,
+          roomId: meetId,
+        });
         socket.on(
           NEW_VIEWER_JOINED,
           async (data: {
@@ -175,7 +144,6 @@ export function MeetMain() {
               };
 
               dataChannel.onmessage = (event) => {
-                console.log('data channel message', event.data);
                 setChat((prev) => [
                   ...prev,
                   JSON.parse(event.data) as ChatType,
@@ -257,13 +225,7 @@ export function MeetMain() {
             );
           }
         );
-      } else if (
-        isHost !== null &&
-        !isHost &&
-        meetId &&
-        meet &&
-        !hasSetViewerPeerConnection
-      ) {
+      } else if (hasMetViewerRequirements) {
         socket.emit(
           JOIN_AS_VIEWER,
           {
@@ -346,6 +308,8 @@ export function MeetMain() {
       }
     })();
   }, [
+    hasMetHostRequirements,
+    hasMetViewerRequirements,
     hasSetViewerPeerConnection,
     isHost,
     meet,
@@ -354,6 +318,7 @@ export function MeetMain() {
     profile.name,
     profile.pic,
     router,
+    socket,
     viewerPeerConnectionToBroadcaster,
   ]);
 
@@ -366,53 +331,6 @@ export function MeetMain() {
       setMeet(null);
     };
   }, [meetData, meetId]);
-
-  useEffect(() => {
-    if (viewerPeerConnectionToBroadcaster) {
-      socket.on(
-        INCOMING_OFFER,
-        async (data: { offer: any; viewerId: string }) => {
-          try {
-            if (viewerPeerConnectionToBroadcaster) {
-              await viewerPeerConnectionToBroadcaster.setRemoteDescription(
-                data.offer
-              );
-
-              const answer =
-                await viewerPeerConnectionToBroadcaster.createAnswer();
-
-              await viewerPeerConnectionToBroadcaster.setLocalDescription(
-                answer
-              );
-
-              socket.emit(NEW_ANSWER, {
-                roomId: meetId,
-                data: {
-                  answer,
-                  viewerId: profile._id,
-                },
-              });
-            }
-          } catch (error) {
-            console.log('Error', error);
-          }
-        }
-      );
-
-      socket.on(
-        INCOMING_CANDIDATE,
-        async ({
-          candidate,
-        }: {
-          candidate: RTCIceCandidate;
-          userId: string;
-        }) => {
-          if (viewerPeerConnectionToBroadcaster)
-            viewerPeerConnectionToBroadcaster.addIceCandidate(candidate);
-        }
-      );
-    }
-  }, [meetId, profile._id, viewerPeerConnectionToBroadcaster]);
 
   useEffect(() => {
     if (
@@ -431,6 +349,13 @@ export function MeetMain() {
       }
     };
   }, [broadcasterMediaStream, hasStartedStreaming]);
+
+  useViewerPeerConnection({
+    meetId: meetId as string | null,
+    profile,
+    socket,
+    viewerPeerConnectionToBroadcaster,
+  });
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
