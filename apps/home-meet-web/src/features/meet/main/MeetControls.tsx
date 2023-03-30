@@ -37,12 +37,8 @@ export function MeetControls(props: MeetControlsProps) {
           selectedVideoDevice={p.selectedVideoDevice}
           onCancel={() => setShowSelectDevice(false)}
           onOk={() => setShowSelectDevice(false)}
-          onSelectAudioDevice={(audioDevice) =>
-            p.onSelectAudioDevice?.(audioDevice)
-          }
-          onSelectVideoDevice={(videoDevice) =>
-            p.onSelectVideoDevice?.(videoDevice)
-          }
+          onSelectAudioDevice={p?.onSelectAudioDevice}
+          onSelectVideoDevice={p?.onSelectVideoDevice}
         />
       )}
       <Space>

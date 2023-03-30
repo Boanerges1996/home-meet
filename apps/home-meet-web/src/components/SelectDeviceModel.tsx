@@ -24,7 +24,7 @@ export function SelectDeviceModel(props: SelectDeviceModelProps) {
       <Space direction="vertical">
         <Typography.Title level={4}>Audio Devices</Typography.Title>
         <Select
-          value={p.selectedAudioDevice}
+          value={p?.selectedAudioDevice}
           placeholder="Select microphone"
           options={[
             ...p.audioDevices.map((device) => ({
@@ -32,10 +32,11 @@ export function SelectDeviceModel(props: SelectDeviceModelProps) {
               value: device.deviceId,
             })),
           ]}
+          onChange={p.onSelectAudioDevice}
         />
         <Typography.Title level={4}>Video Devices</Typography.Title>
         <Select
-          value={p.selectedVideoDevice}
+          value={p?.selectedVideoDevice}
           placeholder="Select camera"
           options={[
             ...p.videoDevices.map((device) => ({
@@ -43,6 +44,7 @@ export function SelectDeviceModel(props: SelectDeviceModelProps) {
               value: device.deviceId,
             })),
           ]}
+          onChange={p.onSelectVideoDevice}
         />
       </Space>
     </Modal>
