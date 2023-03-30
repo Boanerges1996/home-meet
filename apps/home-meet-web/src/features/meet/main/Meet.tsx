@@ -29,10 +29,8 @@ import React, {
   useState,
 } from 'react';
 import { BsFillMicMuteFill, BsFillMicFill } from 'react-icons/bs';
-
-import { BroadcasterChats } from './BroadcasterChats';
+import MainChats from './MainChats';
 import MeetViewers from './MeetViewers';
-import { ViewersChat } from './ViewersChat';
 
 export type MeetMainComponentProps = StyleProps & {};
 
@@ -433,13 +431,21 @@ export function MeetMain() {
           <MeetViewers viewers={viewers} />
         </Col>
         <Col xs={22} sm={22} md={8}>
-          {isHost !== null && isHost && <BroadcasterChats chats={chat} />}
-          {isHost !== null && !isHost && (
-            <ViewersChat
-              dataChannel={viewerDataChannelToBroadcaster}
-              user={profile}
-            />
-          )}
+          <MainChats
+            chats={chat}
+            isHost={isHost}
+            user={profile}
+            dataChannel={viewerDataChannelToBroadcaster}
+            sendMessage={(message) => {
+              setChat((prev) => [
+                ...prev,
+                {
+                  message,
+                  user: profile,
+                },
+              ]);
+            }}
+          />
         </Col>
       </Row>
     </div>

@@ -14,12 +14,12 @@ export const ChatBubble = ({
 }) => {
   const align = isMe ? 'flex-row-reverse' : 'flex-row';
   const justify = isMe ? 'justify-end' : 'justify-start';
-  const bgColor = isMe ? 'bg-[#ECECEC]' : 'bg-[#ECECEC]';
-  const textColor = isMe ? 'text-white' : 'text-gray-800';
+  const bgColor = isMe ? 'bg-[#b7b6b7]' : 'bg-[#ECECEC]';
+  const textColor = isMe ? 'text-black' : 'text-gray-800';
 
   return (
     <div className={`flex ${align} items-end mb-4`}>
-      <div className={`flex ${justify} items-center w-full`}>
+      <div className={`flex ${justify} items-center w-full `}>
         {!isMe && (
           <Image
             src={avatarUrl}
