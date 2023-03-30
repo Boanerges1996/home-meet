@@ -30,6 +30,7 @@ import React, {
 } from 'react';
 import MainChats from './MainChats';
 import { MeetControls } from './MeetControls';
+import { MeetVideo } from './MeetVideo';
 import MeetViewers from './MeetViewers';
 
 export type MeetMainComponentProps = StyleProps & {};
@@ -390,15 +391,12 @@ export function MeetMain() {
           md={16}
           className="h-[100vh] w-full overflow-hidden"
         >
-          {hasStartedStreaming && (
-            <video
-              ref={broadcasterVideoRef as LegacyRef<HTMLVideoElement>}
-              className="w-[100%] object-cover m-0 p-0"
-              muted={isHost ? isMuted : true}
-              autoPlay
-              height="60%"
-            />
-          )}
+          <MeetVideo
+            hasStartedStreaming={hasStartedStreaming}
+            isHost={isHost}
+            isMuted={isMuted}
+            ref={broadcasterVideoRef}
+          />
           <MeetControls
             audioDevices={audioDevices}
             videoDevices={videoDevices}
