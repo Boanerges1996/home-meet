@@ -4,7 +4,7 @@ import { Button, Input } from 'antd';
 import React from 'react';
 import { BsSend } from 'react-icons/bs';
 
-export type MainChatsProps = StyleProps & {
+export type MeetChatsProps = StyleProps & {
   dataChannel?: RTCDataChannel;
   user: IUser;
   onSend?: (message: string) => void;
@@ -17,7 +17,7 @@ const DEFAULT_PROPS = {
   chats: [],
 } as const;
 
-export default function MainChats(props: MainChatsProps) {
+export function MeetChats(props: MeetChatsProps) {
   const p = { ...DEFAULT_PROPS, ...props };
   const [message, setMessage] = React.useState<string>('');
 

@@ -28,7 +28,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import MainChats from './MainChats';
+import { MeetChats } from './MeetChats';
 import { MeetControls } from './MeetControls';
 import { MeetVideo } from './MeetVideo';
 import MeetViewers from './MeetViewers';
@@ -409,7 +409,7 @@ export function MeetMain() {
           <MeetViewers viewers={viewers} />
         </Col>
         <Col xs={22} sm={22} md={8}>
-          <MainChats
+          <MeetChats
             chats={chat}
             isHost={isHost}
             user={profile}
