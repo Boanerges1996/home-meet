@@ -28,6 +28,7 @@ export type MeetMainComponentProps = StyleProps & {};
 
 export function MeetMain() {
   const { meetId } = useRouter().query;
+  const [isChatOpen, setIsChatOpen] = useState<boolean>(true);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [meet, setMeet] = useState<IMeeting | null>(null);
   const [isHost, setIsHost] = useState<boolean | null>(null);
@@ -91,7 +92,6 @@ export function MeetMain() {
         });
 
         const devices = await navigator.mediaDevices.enumerateDevices();
-
         const videoDevices = devices.filter(
           (device) => device.kind === 'videoinput'
         );
@@ -404,7 +404,7 @@ export function MeetMain() {
         <Col
           xs={22}
           sm={22}
-          md={16}
+          md={isChatOpen ? 16 : 23}
           className="h-[100vh] w-full overflow-hidden"
         >
           <MeetVideo
@@ -426,7 +426,14 @@ export function MeetMain() {
           />
           <MeetViewers viewers={viewers} />
         </Col>
-        <Col xs={22} sm={22} md={8}>
+        <Col
+          xs={22}
+          sm={22}
+          md={isChatOpen ? 8 : 1}
+          className={`transition-all duration-200 ${
+            isChatOpen ? 'ease-out' : 'ease-out'
+          }`}
+        >
           <MeetChats
             chats={chat}
             isHost={isHost}
@@ -441,6 +448,8 @@ export function MeetMain() {
                 },
               ]);
             }}
+            isOpen={isChatOpen}
+            toggleOpenClose={() => setIsChatOpen(!isChatOpen)}
           />
         </Col>
       </Row>

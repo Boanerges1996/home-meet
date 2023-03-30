@@ -3,6 +3,7 @@ import { ChatType, IUser, StyleProps } from '@/util';
 import { Button, Input } from 'antd';
 import React from 'react';
 import { BsSend } from 'react-icons/bs';
+import { AiOutlineMenuFold, AiOutlineMenuUnfold } from 'react-icons/ai';
 
 export type MeetChatsProps = StyleProps & {
   dataChannel?: RTCDataChannel;
@@ -10,6 +11,8 @@ export type MeetChatsProps = StyleProps & {
   onSend?: (message: string) => void;
   chats: ChatType[];
   isHost: boolean | null;
+  isOpen?: boolean;
+  toggleOpenClose?: () => void;
   sendMessage?: (message: string) => void;
 };
 
@@ -40,18 +43,25 @@ export function MeetChats(props: MeetChatsProps) {
   };
 
   return (
-    <div className="h-[100vh] border-1 border-solid border-[#e7e7e7] rounded overflow-hidden">
-      <div className={`${height} overflow-scroll p-1`}>
-        {p.chats.map((chat, idx) => (
-          <ChatBubble
-            isMe={verifyIsHost ? false : true}
-            avatarUrl={chat.user.pic ?? ''}
-            message={chat.message}
-            name={chat.user.name}
-            time="12:00"
-            key={idx}
-          />
-        ))}
+    <div className="h-[100vh] border-1 border-solid border-[#e7e7e7] relative rounded overflow-x-hidden overflow-y-auto box-border">
+      <div className={`${height} overflow-scroll p-1 box-border`}>
+        {p.isOpen && (
+          <AiOutlineMenuUnfold onClick={p.toggleOpenClose} size={20} />
+        )}
+        {!p.isOpen && (
+          <AiOutlineMenuFold onClick={p.toggleOpenClose} size={20} />
+        )}
+        {p.isOpen &&
+          p.chats.map((chat, idx) => (
+            <ChatBubble
+              isMe={verifyIsHost ? false : true}
+              avatarUrl={chat.user.pic ?? ''}
+              message={chat.message}
+              name={chat.user.name}
+              time="12:00"
+              key={idx}
+            />
+          ))}
       </div>
 
       {!verifyIsHost && (
