@@ -23,21 +23,20 @@ export const logConnectionState = ({
       });
       console.log(`[${viewerName}] Connection state: connected`);
       break;
-    case 'disconnected':
+    case 'failed':
       notification.error({
         message: 'Disconnected',
-        description: `The connection with ${viewerName} has been disconnected`,
+        description: `The connection with ${viewerName} has failed`,
         duration: 2,
       });
+      console.log(`[${viewerName}] Connection state: failed`);
+      break;
+
+    case 'disconnected':
       console.log(`[${viewerName}] Connection state: disconnected`);
       break;
 
     case 'closed':
-      notification.error({
-        message: 'Closed',
-        description: `The connection with ${viewerName} has been closed`,
-        duration: 2,
-      });
       console.log(`[${viewerName}] Connection state: closed`);
       break;
     default:

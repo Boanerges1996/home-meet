@@ -134,40 +134,33 @@ export function MeetMain() {
                 ],
               });
 
-            viewersPeerConnections.current[data.viewerId].createDataChannel(
-              'chat',
-              {
-                ordered: false,
-                maxPacketLifeTime: 3000,
-              }
-            );
+            const peerConnection =
+              viewersPeerConnections.current[data.viewerId];
 
-            viewersPeerConnections.current[data.viewerId].ondatachannel = (
-              event
-            ) => {
+            peerConnection.createDataChannel('chat', {
+              ordered: false,
+              maxPacketLifeTime: 3000,
+            });
+
+            peerConnection.ondatachannel = (event) => {
               const dataChannel = event.channel;
-
               viewersDataChannels.current[data.viewerId] = dataChannel;
 
               dataChannel.onopen = () => {
                 console.log('data channel opened');
               };
-
               dataChannel.onmessage = (event) => {
                 setChat((prev) => [
                   ...prev,
                   JSON.parse(event.data) as ChatType,
                 ]);
               };
-
               dataChannel.onclose = () => {
                 console.log('data channel closed');
               };
             };
 
-            viewersPeerConnections.current[data.viewerId].onicecandidate = (
-              event
-            ) => {
+            peerConnection.onicecandidate = (event) => {
               if (event.candidate) {
                 // Send ice candidates to viewer
                 socket.emit(EXCHANGE_ICE_CANDIDATES, {
@@ -179,33 +172,29 @@ export function MeetMain() {
               }
             };
 
-            viewersPeerConnections.current[
-              data.viewerId
-            ].onconnectionstatechange = (event) => {
+            peerConnection.onconnectionstatechange = (event) => {
+              const connectionState = peerConnection.connectionState;
+              if (connectionState === 'failed') {
+                setViewers((prev) =>
+                  prev.filter((viewer) => viewer._id !== data.viewerId)
+                );
+              }
               logConnectionState({
-                state:
-                  viewersPeerConnections.current[data.viewerId].connectionState,
+                state: connectionState,
                 viewerName: data.name ?? '',
               });
             };
 
             // Add tracks to stream
             stream.getTracks().forEach((track) => {
-              viewersPeerConnections.current[data.viewerId].addTrack(
-                track,
-                stream
-              );
+              peerConnection.addTrack(track, stream);
             });
 
             // Create offer
-            const offer = await viewersPeerConnections.current[
-              data.viewerId
-            ].createOffer();
+            const offer = await peerConnection.createOffer();
 
             // Set local description
-            await viewersPeerConnections.current[
-              data.viewerId
-            ].setLocalDescription(offer);
+            await peerConnection.setLocalDescription(offer);
 
             // Send offer to viewer
             socket.emit(NEW_OFFER, {
@@ -303,10 +292,6 @@ export function MeetMain() {
                   });
                   router.push('/');
                 }
-                console.log(
-                  'connection state',
-                  viewerPeerConnection.connectionState
-                );
               };
 
               setViewerPeerConnectionToBroadcaster(viewerPeerConnection);
