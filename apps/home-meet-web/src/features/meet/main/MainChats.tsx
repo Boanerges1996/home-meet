@@ -39,12 +39,13 @@ export default function MainChats(props: MainChatsProps) {
 
   return (
     <div className="h-[100vh] border-1 border-solid border-[#e7e7e7] rounded overflow-hidden">
-      <div className={`${height} overflow-scroll`}>
+      <div className={`${height} overflow-scroll p-1`}>
         {p.chats.map((chat, idx) => (
           <ChatBubble
             isMe={verifyIsHost ? false : true}
             avatarUrl={chat.user.pic ?? ''}
             message={chat.message}
+            name={chat.user.name}
             time="12:00"
             key={idx}
           />
