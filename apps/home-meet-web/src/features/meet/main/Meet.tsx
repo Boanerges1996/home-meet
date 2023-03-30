@@ -21,17 +21,8 @@ import {
 } from '@/util';
 import { Col, notification, Row } from 'antd';
 import { useRouter } from 'next/router';
-import React, {
-  LegacyRef,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
-import { MeetChats } from './MeetChats';
-import { MeetControls } from './MeetControls';
-import { MeetVideo } from './MeetVideo';
-import MeetViewers from './MeetViewers';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { MeetChats, MeetControls, MeetVideo, MeetViewers } from '.';
 
 export type MeetMainComponentProps = StyleProps & {};
 

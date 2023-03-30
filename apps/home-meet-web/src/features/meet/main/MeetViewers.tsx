@@ -9,7 +9,7 @@ export type MeetViewersProps = StyleProps & {
 
 const DEFAULT_PROPS = {} as const;
 
-export default function MeetViewers(props: MeetViewersProps) {
+export function MeetViewers(props: MeetViewersProps) {
   const p = { ...DEFAULT_PROPS, ...props };
   return (
     <div
