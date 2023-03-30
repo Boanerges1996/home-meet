@@ -19,7 +19,7 @@ import {
   ViewersDataChannels,
   ViewersPeerConnections,
 } from '@/util';
-import { Button, Col, notification, Row, Select, Space, Tooltip } from 'antd';
+import { Col, notification, Row } from 'antd';
 import { useRouter } from 'next/router';
 import React, {
   LegacyRef,
@@ -28,8 +28,8 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { BsFillMicMuteFill, BsFillMicFill } from 'react-icons/bs';
 import MainChats from './MainChats';
+import { MeetControls } from './MeetControls';
 import MeetViewers from './MeetViewers';
 
 export type MeetMainComponentProps = StyleProps & {};
@@ -43,8 +43,12 @@ export function MeetMain() {
   const [chat, setChat] = useState<ChatType[]>([]);
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
-  const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>();
-  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>();
+  const [selectedVideoDevice, setSelectedVideoDevice] = useState<string | null>(
+    null
+  );
+  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string | null>(
+    null
+  );
   const [
     viewerPeerConnectionToBroadcaster,
     setViewerPeerConnectionToBroadcaster,
@@ -393,41 +397,17 @@ export function MeetMain() {
               muted={isHost ? isMuted : true}
               autoPlay
               height="60%"
-            ></video>
+            />
           )}
-          {isHost !== null && isHost && (
-            <div className="h-[85px] w-full bg-black opacity-75 py-2 mt-[-105px] flex items-center justify-center">
-              <Space>
-                {' '}
-                <Tooltip title={isMuted ? 'Unmute' : 'Mute'}>
-                  <Button onClick={toggleMute} shape="circle">
-                    {isMuted ? <BsFillMicMuteFill /> : <BsFillMicFill />}
-                  </Button>
-                </Tooltip>
-                <Select
-                  value={selectedAudioDevice}
-                  placeholder="Select microphone"
-                  options={[
-                    ...audioDevices.map((device) => ({
-                      label: device.label,
-                      value: device.deviceId,
-                    })),
-                  ]}
-                />
-                <Select
-                  value={selectedVideoDevice}
-                  placeholder="Select camera"
-                  options={[
-                    ...videoDevices.map((device) => ({
-                      label: device.label,
-                      value: device.deviceId,
-                    })),
-                  ]}
-                />
-              </Space>
-            </div>
-          )}
-
+          <MeetControls
+            audioDevices={audioDevices}
+            videoDevices={videoDevices}
+            isMuted={isMuted}
+            selectedAudioDevice={selectedAudioDevice}
+            selectedVideoDevice={selectedVideoDevice}
+            toggleMute={toggleMute}
+            isHost={isHost}
+          />
           <MeetViewers viewers={viewers} />
         </Col>
         <Col xs={22} sm={22} md={8}>

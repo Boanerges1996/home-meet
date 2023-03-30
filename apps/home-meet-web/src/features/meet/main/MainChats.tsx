@@ -13,7 +13,9 @@ export type MainChatsProps = StyleProps & {
   sendMessage?: (message: string) => void;
 };
 
-const DEFAULT_PROPS = {} as const;
+const DEFAULT_PROPS = {
+  chats: [],
+} as const;
 
 export default function MainChats(props: MainChatsProps) {
   const p = { ...DEFAULT_PROPS, ...props };
