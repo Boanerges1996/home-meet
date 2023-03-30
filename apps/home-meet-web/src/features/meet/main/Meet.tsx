@@ -351,13 +351,6 @@ export function MeetMain() {
       broadcasterVideoRef.current.srcObject = broadcasterMediaStream;
       broadcasterVideoRef.current.play();
     }
-
-    return () => {
-      if (broadcasterVideoRef.current) {
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        broadcasterVideoRef.current.srcObject = null;
-      }
-    };
   }, [broadcasterMediaStream, hasStartedStreaming]);
 
   useViewerPeerConnection({
