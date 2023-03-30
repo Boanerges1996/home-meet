@@ -12,6 +12,7 @@ const DEFAULT_PROPS = {} as const;
 
 export const MeetVideo = forwardRef((props: MeetVideoProps, ref) => {
   const p = { ...DEFAULT_PROPS, ...props };
+  const height = p.isHost ? '60%' : '100%';
 
   if (!p.hasStartedStreaming) return <Spin />;
 
@@ -21,7 +22,7 @@ export const MeetVideo = forwardRef((props: MeetVideoProps, ref) => {
       className="w-[100%] object-cover m-0 p-0"
       muted={p.isHost ? p.isMuted : true}
       autoPlay
-      height="60%"
+      height={height}
     />
   );
 });
