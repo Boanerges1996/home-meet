@@ -32,7 +32,6 @@ export function MeetMain() {
   const { meetId } = useRouter().query;
   const [isChatOpen, setIsChatOpen] = useState<boolean>(true);
   const [isMuted, setIsMuted] = useState<boolean>(false);
-  const [meet, setMeet] = useState<IMeeting | null>(null);
   const [isHost, setIsHost] = useState<boolean | null>(null);
   const [viewers, setViewers] = useState<IUser[]>([]);
   const [chat, setChat] = useState<ChatType[]>([]);
@@ -52,7 +51,7 @@ export function MeetMain() {
   const viewersDataChannels = useRef<ViewersDataChannels>({});
   const broadcasterVideoRef = useRef<HTMLVideoElement | null>(null);
   const router = useRouter();
-  const { meetData } = useMeetData(meetId as string | undefined);
+  const { meet } = useMeetData(meetId as string | undefined);
   const [socket] = useSocket();
 
   const {
@@ -309,12 +308,6 @@ export function MeetMain() {
     socket,
     viewerPeerConnectionToBroadcaster,
   ]);
-
-  useEffect(() => {
-    if (meetData && meetId) {
-      setMeet(meetData?.data?.data);
-    }
-  }, [meetData, meetId]);
 
   useEffect(() => {
     console.log('setting broadcaster stream');

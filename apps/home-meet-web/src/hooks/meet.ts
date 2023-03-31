@@ -14,7 +14,7 @@ export const useMeetData = (meetId: string | null | undefined) => {
     }
   );
 
-  return { meetData };
+  return { meet: meetData?.data?.data };
 };
 import { INCOMING_CANDIDATE, INCOMING_OFFER, NEW_ANSWER } from '@/common';
 
