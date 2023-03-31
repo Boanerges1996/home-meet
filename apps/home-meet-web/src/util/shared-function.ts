@@ -103,3 +103,15 @@ export const replaceTrack = ({
       ?.replaceTrack(track);
   });
 };
+
+export const toggleAudioStreamMuteStatus = ({
+  stream,
+}: {
+  stream?: MediaStream;
+}) => {
+  if (stream) {
+    stream.getAudioTracks().forEach((track) => {
+      track.enabled = !track.enabled;
+    });
+  }
+};

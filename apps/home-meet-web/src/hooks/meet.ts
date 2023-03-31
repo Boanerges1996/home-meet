@@ -55,9 +55,7 @@ const useViewerPeerConnection = ({
                 },
               });
             }
-          } catch (error) {
-            console.log('Error', error);
-          }
+          } catch (error) {}
         }
       );
 

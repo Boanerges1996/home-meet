@@ -49,7 +49,6 @@ export function CreateMeeting(
         router.push(`/meet/${result?.data?.data?._id}`);
       },
       onError(err: any) {
-        console.log(err);
         const errorMsg = err?.response?.data?.message ?? 'Something went wrong';
         notification.error({
           message: errorMsg,
@@ -59,7 +58,6 @@ export function CreateMeeting(
   );
 
   const createMeetingRequest = async () => {
-    console.log(profile);
     await refetch();
   };
 

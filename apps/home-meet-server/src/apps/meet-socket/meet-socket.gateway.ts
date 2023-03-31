@@ -76,12 +76,7 @@ export class MeetSocketGateway {
       };
     },
   ): Promise<any> {
-    console.log({
-      roomId,
-      viewerData,
-    });
     client.join(viewerData.viewerId);
-    console.log(this.server.sockets.adapter.rooms);
     const broadcasterId = this.rooms[roomId];
     if (broadcasterId) {
       this.server.to(broadcasterId).emit(NEW_VIEWER_JOINED, viewerData);
@@ -144,7 +139,6 @@ export class MeetSocketGateway {
     }: { roomId: string; candidate: any; userId: string },
   ): Promise<any> {
     this.logger.log(`Client ${client.id} ice-candidate ${roomId}`);
-    // console.log('ice-candidate', candidate);
     this.server.to(userId).emit(INCOMING_CANDIDATE, { candidate });
   }
 }

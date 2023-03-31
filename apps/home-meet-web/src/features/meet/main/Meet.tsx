@@ -7,7 +7,7 @@ import {
   NEW_OFFER,
   NEW_VIEWER_JOINED,
 } from '@/common';
-import { useMeetData, useSocket } from '@/hooks';
+import { useMediaStream, useMeetData, useSocket } from '@/hooks';
 import useViewerPeerConnection from '@/hooks/meet';
 import { AppContext } from '@/providers';
 import {
@@ -19,6 +19,7 @@ import {
   ViewersDataChannels,
   ViewersPeerConnections,
   replaceWithNewTrack,
+  toggleAudioStreamMuteStatus,
 } from '@/util';
 import { Col, notification, Row } from 'antd';
 import { useRouter } from 'next/router';
@@ -35,22 +36,12 @@ export function MeetMain() {
   const [isHost, setIsHost] = useState<boolean | null>(null);
   const [viewers, setViewers] = useState<IUser[]>([]);
   const [chat, setChat] = useState<ChatType[]>([]);
-  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
-  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
-  const [selectedVideoDevice, setSelectedVideoDevice] = useState<string | null>(
-    null
-  );
-  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string | null>(
-    null
-  );
   const [
     viewerPeerConnectionToBroadcaster,
     setViewerPeerConnectionToBroadcaster,
   ] = useState<RTCPeerConnection>();
   const [viewerDataChannelToBroadcaster, setViewerDataChannelToBroadcaster] =
     useState<RTCDataChannel>();
-  const [broadcasterMediaStream, setBroadcasterMediaStream] =
-    useState<MediaStream>();
   const [hasStartedStreaming, setHasStartedStreaming] =
     useState<boolean>(false);
 
@@ -63,6 +54,22 @@ export function MeetMain() {
   const router = useRouter();
   const { meetData } = useMeetData(meetId as string | undefined);
   const [socket] = useSocket();
+
+  const {
+    mediaStream,
+    audioDevices,
+    selectedAudioDevice,
+    selectedVideoDevice,
+    setMediaStream,
+    setSelectedVideoDevice,
+    setSelectedAudioDevice,
+    videoDevices,
+  } = useMediaStream({
+    isHost,
+    meet,
+    socket,
+    meetId: meetId as string,
+  });
 
   if ((isLogged !== null || isLogged !== undefined) && !isLogged) {
     router.push('/login');
@@ -86,25 +93,7 @@ export function MeetMain() {
 
   useEffect(() => {
     (async () => {
-      if (hasMetHostRequirements) {
-        let stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter(
-          (device) => device.kind === 'videoinput'
-        );
-        const audioDevices = devices.filter(
-          (device) => device.kind === 'audioinput'
-        );
-
-        setAudioDevices(audioDevices);
-        setVideoDevices(videoDevices);
-        setSelectedAudioDevice(audioDevices[0].deviceId);
-        setSelectedVideoDevice(videoDevices[0].deviceId);
-        setBroadcasterMediaStream(stream);
+      if (hasMetHostRequirements && !hasStartedStreaming && mediaStream) {
         setHasStartedStreaming(true);
 
         socket.emit(JOIN_AS_BROADCASTER, {
@@ -187,8 +176,8 @@ export function MeetMain() {
             };
 
             // Add tracks to stream
-            stream.getTracks().forEach((track) => {
-              peerConnection.addTrack(track, stream);
+            mediaStream.getTracks().forEach((track) => {
+              peerConnection.addTrack(track, mediaStream);
             });
 
             // Create offer
@@ -278,7 +267,7 @@ export function MeetMain() {
 
               viewerPeerConnection.ontrack = (event) => {
                 if (event.streams && event.streams[0]) {
-                  setBroadcasterMediaStream(event.streams[0]);
+                  setMediaStream(event.streams[0]);
                   setHasStartedStreaming(true);
                 }
               };
@@ -307,13 +296,16 @@ export function MeetMain() {
     hasMetHostRequirements,
     hasMetViewerRequirements,
     hasSetViewerPeerConnection,
+    hasStartedStreaming,
     isHost,
+    mediaStream,
     meet,
     meetId,
     profile._id,
     profile.name,
     profile.pic,
     router,
+    setMediaStream,
     socket,
     viewerPeerConnectionToBroadcaster,
   ]);
@@ -325,15 +317,19 @@ export function MeetMain() {
   }, [meetData, meetId]);
 
   useEffect(() => {
+    console.log('setting broadcaster stream');
+    console.log('mediaStream', mediaStream);
     if (
-      broadcasterMediaStream &&
+      mediaStream !== null &&
+      mediaStream &&
       hasStartedStreaming &&
       broadcasterVideoRef.current
     ) {
-      broadcasterVideoRef.current.srcObject = broadcasterMediaStream;
+      console.log('setting broadcaster stream');
+      broadcasterVideoRef.current.srcObject = mediaStream;
       broadcasterVideoRef.current.play();
     }
-  }, [broadcasterMediaStream, hasStartedStreaming]);
+  }, [hasStartedStreaming, mediaStream]);
 
   useViewerPeerConnection({
     meetId: meetId as string | null,
@@ -344,35 +340,33 @@ export function MeetMain() {
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
-    broadcasterMediaStream?.getAudioTracks().forEach((track) => {
-      track.enabled = !track.enabled;
-    });
+    toggleAudioStreamMuteStatus({ stream: mediaStream! });
   };
 
   const onSelectAudioDevice = async (audioId: string) => {
     const stream = await replaceWithNewTrack({
       peerConnections: viewersPeerConnections.current,
       deviceId: audioId,
-      stream: broadcasterMediaStream!,
+      stream: mediaStream!,
       type: 'audio',
       selectedDeviceId: selectedAudioDevice!,
     });
 
     setSelectedAudioDevice(audioId);
-    setBroadcasterMediaStream(stream);
+    setMediaStream(stream!);
   };
 
   const onSelectVideoDevice = async (videoId: string) => {
     const stream = await replaceWithNewTrack({
       peerConnections: viewersPeerConnections.current,
       deviceId: videoId,
-      stream: broadcasterMediaStream!,
+      stream: mediaStream!,
       type: 'video',
       selectedDeviceId: selectedVideoDevice!,
     });
 
     setSelectedVideoDevice(videoId);
-    setBroadcasterMediaStream(stream);
+    setMediaStream(stream!);
   };
   return (
     <div>
