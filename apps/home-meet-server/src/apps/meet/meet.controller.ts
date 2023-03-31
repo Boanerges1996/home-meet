@@ -18,6 +18,7 @@ export class MeetController {
   }
 
   @Get('get/:id')
+  @Public()
   async getMeetById(@Param('id') id: string) {
     return this.meetService.getMeetById(id);
   }
