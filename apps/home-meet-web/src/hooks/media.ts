@@ -19,7 +19,7 @@ export const useMediaStream = ({
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedVideoDevice, setSelectedVideoDevice] = useState('');
   const [selectedAudioDevice, setSelectedAudioDevice] = useState('');
-
+  console.log(isHost);
   const hasMetRequirements = useMemo(
     () => Boolean(isHost !== null && isHost && meetId && meet && socket),
     [isHost, meetId, meet, socket]

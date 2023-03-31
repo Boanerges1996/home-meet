@@ -1,6 +1,7 @@
+import { INCOMING_CANDIDATE, INCOMING_OFFER, NEW_ANSWER } from '@/common';
 import { axiosClient, IMeeting } from '@/util';
+import { useEffect, useState } from 'react';
 import { useQuery } from 'react-query';
-import { useState, useEffect } from 'react';
 import { Socket } from 'socket.io-client';
 
 export const useMeetData = (meetId: string | null | undefined) => {
@@ -14,9 +15,26 @@ export const useMeetData = (meetId: string | null | undefined) => {
     }
   );
 
-  return { meet: meetData?.data?.data };
+  return { meet: meetData?.data?.data } as { meet: IMeeting | null };
 };
-import { INCOMING_CANDIDATE, INCOMING_OFFER, NEW_ANSWER } from '@/common';
+
+export const useIsHost = ({
+  meet,
+  profileId,
+}: {
+  meet: IMeeting | null;
+  profileId: string | null;
+}) => {
+  const [isHost, setIsHost] = useState(false);
+
+  useEffect(() => {
+    if (meet && profileId) {
+      setIsHost(meet?.creator?._id === profileId);
+    }
+  }, [meet, profileId]);
+
+  return { isHost, setIsHost };
+};
 
 const useViewerPeerConnection = ({
   viewerPeerConnectionToBroadcaster,

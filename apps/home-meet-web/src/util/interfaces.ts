@@ -27,8 +27,9 @@ export type ChatType = {
   user: IUser;
 };
 
-interface MediaDeviceInfo {
-  deviceId: string;
-  kind: string;
-  label: string;
+export interface IJoinedUser {
+  name: string;
+  pic: string;
+  viewerId: string;
+  socketId: string;
 }

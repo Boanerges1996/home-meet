@@ -12,7 +12,6 @@ import useViewerPeerConnection from '@/hooks/meet';
 import { AppContext } from '@/providers';
 import {
   ChatType,
-  IMeeting,
   IUser,
   logConnectionState,
   StyleProps,
@@ -20,6 +19,7 @@ import {
   ViewersPeerConnections,
   replaceWithNewTrack,
   toggleAudioStreamMuteStatus,
+  IJoinedUser,
 } from '@/util';
 import { Col, notification, Row } from 'antd';
 import { useRouter } from 'next/router';
@@ -43,17 +43,16 @@ export function MeetMain() {
     useState<RTCDataChannel>();
   const [hasStartedStreaming, setHasStartedStreaming] =
     useState<boolean>(false);
-
   const [hasSetViewerPeerConnection, setHasSetViewerPeerConnection] =
     useState<boolean>(false);
-  const { profile, isLogged } = useContext(AppContext);
   const viewersPeerConnections = useRef<ViewersPeerConnections>({});
   const viewersDataChannels = useRef<ViewersDataChannels>({});
   const broadcasterVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  const { profile, isLogged } = useContext(AppContext);
   const router = useRouter();
   const { meet } = useMeetData(meetId as string | undefined);
   const [socket] = useSocket();
-
   const {
     mediaStream,
     audioDevices,
@@ -99,106 +98,92 @@ export function MeetMain() {
           broadcasterId: meet.creator._id,
           roomId: meetId,
         });
-        socket.on(
-          NEW_VIEWER_JOINED,
-          async (data: {
-            name: string;
-            pic: string;
-            viewerId: string;
-            socketId: string;
-          }) => {
-            const newViewer = {
-              name: data.name,
-              pic: data.pic,
-              _id: data.viewerId,
-            };
 
-            setViewers((prev) => [...prev, newViewer]);
-            viewersPeerConnections.current[data.viewerId] =
-              new RTCPeerConnection({
-                iceServers: [
-                  {
-                    urls: 'stun:stun.l.google.com:19302',
-                  },
-                ],
+        socket.on(NEW_VIEWER_JOINED, async (data: IJoinedUser) => {
+          const newViewer = {
+            name: data.name,
+            pic: data.pic,
+            _id: data.viewerId,
+          };
+
+          setViewers((prev) => [...prev, newViewer]);
+          viewersPeerConnections.current[data.viewerId] = new RTCPeerConnection(
+            {
+              iceServers: [
+                {
+                  urls: 'stun:stun.l.google.com:19302',
+                },
+              ],
+            }
+          );
+
+          const peerConnection = viewersPeerConnections.current[data.viewerId];
+
+          peerConnection.createDataChannel('chat', {
+            ordered: false,
+            maxPacketLifeTime: 3000,
+          });
+
+          peerConnection.ondatachannel = (event) => {
+            const dataChannel = event.channel;
+            viewersDataChannels.current[data.viewerId] = dataChannel;
+
+            dataChannel.onopen = () => {
+              console.log('data channel opened');
+            };
+            dataChannel.onmessage = (event) => {
+              setChat((prev) => [...prev, JSON.parse(event.data) as ChatType]);
+            };
+            dataChannel.onclose = () => {
+              console.log('data channel closed');
+            };
+          };
+
+          peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+              // Send ice candidates to viewer
+              socket.emit(EXCHANGE_ICE_CANDIDATES, {
+                candidate: event.candidate,
+                userId: data.viewerId,
+                broadcasterId: meet.creator._id,
+                roomId: meetId,
               });
+            }
+          };
 
-            const peerConnection =
-              viewersPeerConnections.current[data.viewerId];
-
-            peerConnection.createDataChannel('chat', {
-              ordered: false,
-              maxPacketLifeTime: 3000,
+          peerConnection.onconnectionstatechange = (event) => {
+            const connectionState = peerConnection.connectionState;
+            if (connectionState === 'failed') {
+              setViewers((prev) =>
+                prev.filter((viewer) => viewer._id !== data.viewerId)
+              );
+            }
+            logConnectionState({
+              state: connectionState,
+              viewerName: data.name ?? '',
             });
+          };
 
-            peerConnection.ondatachannel = (event) => {
-              const dataChannel = event.channel;
-              viewersDataChannels.current[data.viewerId] = dataChannel;
+          mediaStream.getTracks().forEach((track) => {
+            peerConnection.addTrack(track, mediaStream);
+          });
 
-              dataChannel.onopen = () => {
-                console.log('data channel opened');
-              };
-              dataChannel.onmessage = (event) => {
-                setChat((prev) => [
-                  ...prev,
-                  JSON.parse(event.data) as ChatType,
-                ]);
-              };
-              dataChannel.onclose = () => {
-                console.log('data channel closed');
-              };
-            };
+          const offer = await peerConnection.createOffer();
 
-            peerConnection.onicecandidate = (event) => {
-              if (event.candidate) {
-                // Send ice candidates to viewer
-                socket.emit(EXCHANGE_ICE_CANDIDATES, {
-                  candidate: event.candidate,
-                  userId: data.viewerId,
-                  broadcasterId: meet.creator._id,
-                  roomId: meetId,
-                });
-              }
-            };
+          await peerConnection.setLocalDescription(offer);
 
-            peerConnection.onconnectionstatechange = (event) => {
-              const connectionState = peerConnection.connectionState;
-              if (connectionState === 'failed') {
-                setViewers((prev) =>
-                  prev.filter((viewer) => viewer._id !== data.viewerId)
-                );
-              }
-              logConnectionState({
-                state: connectionState,
-                viewerName: data.name ?? '',
-              });
-            };
-
-            // Add tracks to stream
-            mediaStream.getTracks().forEach((track) => {
-              peerConnection.addTrack(track, mediaStream);
-            });
-
-            // Create offer
-            const offer = await peerConnection.createOffer();
-
-            // Set local description
-            await peerConnection.setLocalDescription(offer);
-
-            // Send offer to viewer
-            socket.emit(NEW_OFFER, {
-              roomId: meetId,
-              data: {
-                offer,
-                viewerId: data.viewerId,
-              },
-            });
-          }
-        );
+          socket.emit(NEW_OFFER, {
+            roomId: meetId,
+            data: {
+              offer,
+              viewerId: data.viewerId,
+            },
+          });
+        });
 
         socket.on(
           INCOMING_ANSWER,
-          (data: { answer: any; viewerId: string }) => {
+          (data: { answer: RTCSessionDescription; viewerId: string }) => {
             viewersPeerConnections.current[data.viewerId].setRemoteDescription(
               data.answer
             );
@@ -207,7 +192,13 @@ export function MeetMain() {
 
         socket.on(
           INCOMING_CANDIDATE,
-          async ({ candidate, userId }: { candidate: any; userId: string }) => {
+          async ({
+            candidate,
+            userId,
+          }: {
+            candidate: RTCIceCandidateInit;
+            userId: string;
+          }) => {
             await viewersPeerConnections.current[userId]?.addIceCandidate(
               candidate
             );
