@@ -361,6 +361,16 @@ export function MeetMain() {
     setSelectedVideoDevice(videoId);
     setMediaStream(stream!);
   };
+
+  const setChatMessage = (message: string) => {
+    setChat((prev) => [
+      ...prev,
+      {
+        message,
+        user: profile,
+      },
+    ]);
+  };
   return (
     <div>
       <Row align="middle" justify="center">
@@ -402,15 +412,7 @@ export function MeetMain() {
             isHost={isHost}
             user={profile}
             dataChannel={viewerDataChannelToBroadcaster}
-            sendMessage={(message) => {
-              setChat((prev) => [
-                ...prev,
-                {
-                  message,
-                  user: profile,
-                },
-              ]);
-            }}
+            sendMessage={(message) => setChatMessage(message)}
             isOpen={isChatOpen}
             toggleOpenClose={() => setIsChatOpen(!isChatOpen)}
           />
