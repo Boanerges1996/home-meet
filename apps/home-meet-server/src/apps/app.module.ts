@@ -8,7 +8,6 @@ import { getEnvPath } from 'src/util';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { SocksModule } from './socks/socks.module';
 import { UserModule } from './user/user.module';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtConfigService } from '@/jwt';
@@ -35,7 +34,6 @@ const envFilePath = getEnvPath(`${__dirname}/../envs`);
       imports: [ConfigModule],
       useClass: JwtConfigService,
     }),
-    SocksModule,
     UserModule,
     AuthModule,
     MeetModule,

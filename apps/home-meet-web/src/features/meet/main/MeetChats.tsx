@@ -69,8 +69,10 @@ export function MeetChats(props: MeetChatsProps) {
           className="bottom-0 h-[5%] w-full"
           onChange={(e) => setMessage(e.target.value)}
           value={message}
+          onPressEnter={sendMessageWithDataChannel}
           suffix={
             <Button
+              className="border-0"
               icon={
                 <BsSend
                   size={15}
