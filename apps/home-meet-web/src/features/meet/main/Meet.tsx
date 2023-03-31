@@ -301,15 +301,12 @@ export function MeetMain() {
   ]);
 
   useEffect(() => {
-    console.log('setting broadcaster stream');
-    console.log('mediaStream', mediaStream);
     if (
       mediaStream !== null &&
       mediaStream &&
       hasStartedStreaming &&
       broadcasterVideoRef.current
     ) {
-      console.log('setting broadcaster stream');
       broadcasterVideoRef.current.srcObject = mediaStream;
       broadcasterVideoRef.current.play();
     }
