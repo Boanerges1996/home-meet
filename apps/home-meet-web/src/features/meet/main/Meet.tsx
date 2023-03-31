@@ -18,6 +18,7 @@ import {
   StyleProps,
   ViewersDataChannels,
   ViewersPeerConnections,
+  replaceWithNewTrack,
 } from '@/util';
 import { Col, notification, Row } from 'antd';
 import { useRouter } from 'next/router';
@@ -63,9 +64,9 @@ export function MeetMain() {
   const { meetData } = useMeetData(meetId as string | undefined);
   const [socket] = useSocket();
 
-  // if ((isLogged !== null || isLogged !== undefined) && !isLogged) {
-  //   router.push('/login');
-  // }
+  if ((isLogged !== null || isLogged !== undefined) && !isLogged) {
+    router.push('/login');
+  }
 
   useEffect(() => {
     if (meet && profile._id) {
@@ -321,10 +322,6 @@ export function MeetMain() {
     if (meetData && meetId) {
       setMeet(meetData?.data?.data);
     }
-
-    return () => {
-      setMeet(null);
-    };
   }, [meetData, meetId]);
 
   useEffect(() => {
@@ -353,50 +350,29 @@ export function MeetMain() {
   };
 
   const onSelectAudioDevice = async (audioId: string) => {
-    if (selectedAudioDevice) {
-      const audioStream = broadcasterMediaStream?.getAudioTracks()[0];
-      audioStream?.stop();
-    }
+    const stream = await replaceWithNewTrack({
+      peerConnections: viewersPeerConnections.current,
+      deviceId: audioId,
+      stream: broadcasterMediaStream!,
+      type: 'audio',
+      selectedDeviceId: selectedAudioDevice!,
+    });
 
-    try {
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        audio: { deviceId: audioId },
-      });
-
-      Object.keys(viewersPeerConnections.current).forEach((viewerId) => {
-        const sender = viewersPeerConnections.current[viewerId]
-          ?.getSenders()
-          .find((s) => s.track?.kind === 'audio');
-        sender?.replaceTrack(newStream.getAudioTracks()[0]);
-      });
-
-      setSelectedAudioDevice(audioId);
-    } catch (error) {}
+    setSelectedAudioDevice(audioId);
+    setBroadcasterMediaStream(stream);
   };
 
   const onSelectVideoDevice = async (videoId: string) => {
-    if (selectedVideoDevice) {
-      const videoStream = broadcasterMediaStream?.getVideoTracks()[0];
-      videoStream?.stop();
-    }
+    const stream = await replaceWithNewTrack({
+      peerConnections: viewersPeerConnections.current,
+      deviceId: videoId,
+      stream: broadcasterMediaStream!,
+      type: 'video',
+      selectedDeviceId: selectedVideoDevice!,
+    });
 
-    try {
-      const newStream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: videoId },
-      });
-
-      Object.keys(viewersPeerConnections.current).forEach((viewerId) => {
-        const sender = viewersPeerConnections.current[viewerId]
-          ?.getSenders()
-          .find((s) => s.track?.kind === 'video');
-        sender?.replaceTrack(newStream.getVideoTracks()[0]);
-      });
-
-      setSelectedVideoDevice(videoId);
-      setBroadcasterMediaStream(newStream);
-    } catch (error) {
-      console.error('Failed to get user media:', error);
-    }
+    setSelectedVideoDevice(videoId);
+    setBroadcasterMediaStream(stream);
   };
   return (
     <div>
